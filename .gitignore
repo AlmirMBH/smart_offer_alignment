@@ -9,3 +9,5 @@ app.db
 project_task.txt
 data_analysis.txt
 plan.txt
+.DS_Store
+__pycache__/
