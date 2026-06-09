@@ -1,0 +1,11 @@
+pandas
+openpyxl
+xlrd
+sentence-transformers
+fastapi
+uvicorn
+sqlalchemy
+alembic
+python-multipart
+python-dotenv
+psycopg2-binary

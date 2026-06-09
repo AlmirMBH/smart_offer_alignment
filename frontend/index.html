@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Troskovnik comparison</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: system-ui, sans-serif; color: #e8e8e8; background: #000; }
+    .top-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem 1rem;
+      padding: 0.75rem 1.25rem;
+      background: #111;
+      border-bottom: 1px solid #333;
+    }
+    .top-bar-title {
+      margin: 0;
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: #fff;
+    }
+    .top-bar-nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+    }
+    .tab-button {
+      padding: 0.45rem 0.85rem;
+      border: 1px solid transparent;
+      border-radius: 4px;
+      background: transparent;
+      font: inherit;
+      font-size: 0.95rem;
+      color: #aaa;
+      cursor: pointer;
+    }
+    .tab-button:hover { background: #222; color: #fff; }
+    .tab-button.active {
+      font-weight: 600;
+      color: #7eb8ff;
+      background: #1a2a44;
+      border-color: #2a4a7a;
+    }
+    .page-content { max-width: 1100px; margin: 0 auto; padding: 1.25rem; min-height: calc(100vh - 3.5rem); }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+    #panel-comparison.active {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: calc(100vh - 5rem);
+    }
+    .comparison-center {
+      width: 100%;
+      max-width: 32rem;
+      text-align: center;
+    }
+    .comparison-intro {
+      margin: 0 0 1.5rem;
+      color: #aaa;
+      line-height: 1.5;
+    }
+    .comparison-upload-block p { margin: 0.85rem 0; }
+    .comparison-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      justify-content: center;
+      margin-top: 1rem;
+    }
+    #message { text-align: left; }
+    table { border-collapse: collapse; margin-bottom: 1rem; width: 100%; background: #111; }
+    th, td { border: 1px solid #333; padding: 0.4rem 0.6rem; text-align: left; }
+    th { background: #1a1a1a; }
+    pre { white-space: pre-wrap; background: #111; padding: 0.8rem; border: 1px solid #333; }
+    button:not(.tab-button) {
+      padding: 0.4rem 0.75rem;
+      font: inherit;
+      cursor: pointer;
+      background: #222;
+      color: #e8e8e8;
+      border: 1px solid #444;
+      border-radius: 4px;
+    }
+    button:not(.tab-button):hover { background: #333; }
+    input, select { background: #111; color: #e8e8e8; border: 1px solid #444; padding: 0.3rem 0.5rem; }
+    #data-analysis-dashboard { width: 100%; max-width: 1000px; height: 700px; margin-bottom: 1.5rem; }
+    #validation-chart { width: 100%; max-width: 1000px; height: 800px; margin-bottom: 1.5rem; }
+    #message, #data-analysis-message, #validation-message { min-height: 1.5rem; }
+    .status { padding: 0.6rem 0.8rem; margin: 0.5rem 0; border-radius: 4px; }
+    .status-loading { background: #1a2a44; color: #7eb8ff; }
+    .status-success { background: #1a2e1a; color: #81c784; }
+    .status-error { background: #2e1a1a; color: #ef9a9a; }
+    .spinner {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      margin-right: 8px;
+      border: 2px solid #7eb8ff;
+      border-top-color: transparent;
+      border-radius: 50%;
+      vertical-align: -2px;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @media (max-width: 540px) {
+      .top-bar { flex-direction: column; align-items: stretch; }
+      .top-bar-nav { width: 100%; }
+      .tab-button { flex: 1 1 auto; text-align: center; }
+    }
+    .data-analysis-section { display: none; margin-bottom: 1.5rem; }
+    .data-analysis-block { display: none; margin-bottom: 1rem; }
+    .validation-section { display: none; margin-bottom: 1.5rem; }
+  </style>
+</head>
+<body>
+  <header class="top-bar">
+    <h1 class="top-bar-title">Troskovnik comparison</h1>
+    <nav class="top-bar-nav">
+      <button class="tab-button active" id="tab-button-comparison">Comparison</button>
+      <button class="tab-button" id="tab-button-data-analysis">Data Analysis</button>
+      <button class="tab-button" id="tab-button-validation">Validation</button>
+    </nav>
+  </header>
+
+  <main class="page-content">
+  <div class="tab-panel active" id="panel-comparison">
+    <div class="comparison-center">
+      <p class="comparison-intro">
+        Upload Excel troskovnici for a component. The app detects the relevant sheets,
+        parses line items, matches them across offers with cosine similarity, and stores them for comparison.
+        Download the CSV when you are ready to compare all loaded offers side by side.
+      </p>
+      <div class="comparison-upload-block">
+        <p>
+          <label>Component
+            <select id="component">
+              <option value="piping" selected>Piping</option>
+              <option value="electro">Electro</option>
+            </select>
+          </label>
+        </p>
+        <p>
+          <label>Excel file <input type="file" id="file" accept=".xls,.xlsx"></label>
+        </p>
+        <p class="comparison-actions">
+          <button id="upload">Upload</button>
+          <button id="download">Download comparison CSV</button>
+        </p>
+      </div>
+      <div id="message"></div>
+    </div>
+  </div>
+
+  <div class="tab-panel" id="panel-data-analysis">
+    <p>
+      <button id="run-data-analysis">Run data analysis</button>
+    </p>
+    <div id="data-analysis-message"></div>
+
+    <section id="data-analysis-section-summary" class="data-analysis-section">
+      <h2>Summary</h2>
+      <pre id="data-analysis-observations"></pre>
+    </section>
+
+    <section id="data-analysis-section-structure" class="data-analysis-section">
+      <h2>1. Dataset structure</h2>
+      <div id="data-analysis-block-summary-sheet" class="data-analysis-block">
+        <h3>By offer and sheet</h3>
+        <div id="data-analysis-summary-table"></div>
+      </div>
+      <div id="data-analysis-block-totals" class="data-analysis-block">
+        <h3>Totals per offer</h3>
+        <div id="data-analysis-totals-table"></div>
+      </div>
+    </section>
+
+    <section id="data-analysis-section-quality" class="data-analysis-section">
+      <h2>2. Data quality</h2>
+      <div id="data-analysis-block-quality-summary" class="data-analysis-block">
+        <h3>Overall</h3>
+        <pre id="data-analysis-quality"></pre>
+      </div>
+      <div id="data-analysis-block-quality-by-sheet" class="data-analysis-block">
+        <h3>By offer and sheet</h3>
+        <div id="data-analysis-quality-by-sheet-table"></div>
+      </div>
+    </section>
+
+    <section id="data-analysis-section-distribution-comparability" class="data-analysis-section">
+      <h2>3. Item distribution & comparability</h2>
+      <div id="data-analysis-block-distribution-comparability-by-sheet" class="data-analysis-block">
+        <h3>By offer and sheet</h3>
+        <div id="data-analysis-distribution-comparability-table"></div>
+      </div>
+    </section>
+
+    <section id="data-analysis-section-dashboard" class="data-analysis-section">
+      <h2>Dashboard</h2>
+      <div id="data-analysis-dashboard"></div>
+    </section>
+  </div>
+
+  <div class="tab-panel" id="panel-validation">
+    <p>
+      <button id="run-validation">Run validation</button>
+    </p>
+    <div id="validation-message"></div>
+
+    <section id="validation-section-summary" class="validation-section">
+      <h2>Summary</h2>
+      <pre id="validation-summary"></pre>
+    </section>
+
+    <section id="validation-section-charts" class="validation-section">
+      <h2>Charts</h2>
+      <div id="validation-chart"></div>
+    </section>
+  </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/plotly.js-dist-min@2.35.2/plotly.min.js"></script>
+  <script>
+    const componentInput = document.getElementById("component");
+    const fileInput = document.getElementById("file");
+    const message = document.getElementById("message");
+    const dataAnalysisMessage = document.getElementById("data-analysis-message");
+    const validationMessage = document.getElementById("validation-message");
+    const uploadButton = document.getElementById("upload");
+    const downloadButton = document.getElementById("download");
+    const runDataAnalysisButton = document.getElementById("run-data-analysis");
+    const runValidationButton = document.getElementById("run-validation");
+
+    function formatErrorDetail(data) {
+      if (!data || !data.detail) {
+        return "Request failed.";
+      }
+      if (typeof data.detail === "string") {
+        return data.detail;
+      }
+      return JSON.stringify(data.detail);
+    }
+
+    function getDownloadFilename(response, fallbackFilename) {
+      const contentDisposition = response.headers.get("Content-Disposition");
+      if (!contentDisposition) {
+        return fallbackFilename;
+      }
+      const utf8Match = contentDisposition.match(/filename\*=utf-8''([^;]+)/i);
+      if (utf8Match) {
+        return decodeURIComponent(utf8Match[1]);
+      }
+      const quotedMatch = contentDisposition.match(/filename="([^"]+)"/i);
+      if (quotedMatch) {
+        return quotedMatch[1];
+      }
+      return fallbackFilename;
+    }
+
+      statusElement.className = "status status-" + statusType;
+      if (statusType === "loading") {
+        statusElement.innerHTML = '<span class="spinner"></span>' + statusText;
+        return;
+      }
+      statusElement.textContent = statusText;
+    }
+
+    function setComparisonButtonsDisabled(isDisabled) {
+      uploadButton.disabled = isDisabled;
+      downloadButton.disabled = isDisabled;
+    }
+
+    function showTab(tabName) {
+      document.getElementById("panel-comparison").classList.toggle("active", tabName === "comparison");
+      document.getElementById("panel-data-analysis").classList.toggle("active", tabName === "data-analysis");
+      document.getElementById("panel-validation").classList.toggle("active", tabName === "validation");
+      document.getElementById("tab-button-comparison").classList.toggle("active", tabName === "comparison");
+      document.getElementById("tab-button-data-analysis").classList.toggle("active", tabName === "data-analysis");
+      document.getElementById("tab-button-validation").classList.toggle("active", tabName === "validation");
+    }
+
+    function setDataAnalysisBlockVisible(blockId, isVisible) {
+      document.getElementById(blockId).style.display = isVisible ? "block" : "none";
+    }
+
+    function setDataAnalysisSectionVisible(sectionId, isVisible) {
+      document.getElementById(sectionId).style.display = isVisible ? "block" : "none";
+    }
+
+    function resetDataAnalysisSections() {
+      document.querySelectorAll(".data-analysis-section").forEach(function (sectionElement) {
+        sectionElement.style.display = "none";
+      });
+      document.querySelectorAll(".data-analysis-block").forEach(function (blockElement) {
+        blockElement.style.display = "none";
+      });
+      const clearElementIds = [
+        "data-analysis-observations",
+        "data-analysis-quality",
+        "data-analysis-summary-table",
+        "data-analysis-totals-table",
+        "data-analysis-quality-by-sheet-table",
+        "data-analysis-distribution-comparability-table",
+        "data-analysis-dashboard",
+      ];
+      for (const elementId of clearElementIds) {
+        const element = document.getElementById(elementId);
+        element.textContent = "";
+        element.innerHTML = "";
+      }
+    }
+
+    function buildTable(containerId, rows) {
+      const container = document.getElementById(containerId);
+      container.innerHTML = "";
+      if (!rows.length) {
+        return false;
+      }
+
+      const table = document.createElement("table");
+      const headerRow = document.createElement("tr");
+      for (const columnName of Object.keys(rows[0])) {
+        const headerCell = document.createElement("th");
+        headerCell.textContent = columnName;
+        headerRow.appendChild(headerCell);
+      }
+      table.appendChild(headerRow);
+
+      for (const row of rows) {
+        const tableRow = document.createElement("tr");
+        for (const columnName of Object.keys(rows[0])) {
+          const tableCell = document.createElement("td");
+          tableCell.textContent = row[columnName];
+          tableRow.appendChild(tableCell);
+        }
+        table.appendChild(tableRow);
+      }
+
+      container.appendChild(table);
+      return true;
+    }
+
+    function pickTableColumns(rows, columnNames) {
+      return rows.map(function (row) {
+        const pickedRow = {};
+        for (const columnName of columnNames) {
+          pickedRow[columnName] = row[columnName];
+        }
+        return pickedRow;
+      });
+    }
+
+    function hasQualityRowIssues(rows) {
+      return rows.some(function (row) {
+        return row.rows_without_unit > 0
+          || row.rows_without_quantity > 0
+          || row.rows_without_unit_price > 0
+          || row.rows_without_total_price > 0;
+      });
+    }
+
+    function renderDataAnalysis(data) {
+      resetDataAnalysisSections();
+
+      const observationsText = data.observations.join("\n");
+      document.getElementById("data-analysis-observations").textContent = observationsText;
+      setDataAnalysisSectionVisible("data-analysis-section-summary", observationsText.length > 0);
+
+      const summaryRows = data.summary_by_offer_sheet;
+      const hasSummarySheet = summaryRows.length > 0 && buildTable(
+        "data-analysis-summary-table",
+        pickTableColumns(summaryRows, [
+          "offer_file",
+          "source_sheet",
+          "item_count",
+          "total_value",
+          "avg_embed_text_length",
+        ])
+      );
+      setDataAnalysisBlockVisible("data-analysis-block-summary-sheet", hasSummarySheet);
+
+      const hasTotals = buildTable("data-analysis-totals-table", data.totals_by_offer);
+      setDataAnalysisBlockVisible("data-analysis-block-totals", hasTotals);
+      setDataAnalysisSectionVisible(
+        "data-analysis-section-structure",
+        hasSummarySheet || hasTotals
+      );
+
+      const qualityText = buildQualitySummary(data.data_quality);
+      const hasQualitySummary = Object.values(data.data_quality).some(function (value) { return value > 0; });
+      document.getElementById("data-analysis-quality").textContent = qualityText;
+      setDataAnalysisBlockVisible("data-analysis-block-quality-summary", hasQualitySummary);
+
+      const hasQualityBySheet = data.quality_by_offer_sheet.length > 0
+        && hasQualityRowIssues(data.quality_by_offer_sheet)
+        && buildTable("data-analysis-quality-by-sheet-table", data.quality_by_offer_sheet);
+      setDataAnalysisBlockVisible("data-analysis-block-quality-by-sheet", hasQualityBySheet);
+
+      setDataAnalysisSectionVisible(
+        "data-analysis-section-quality",
+        hasQualitySummary || hasQualityBySheet
+      );
+
+      const hasDistributionComparability = buildTable(
+        "data-analysis-distribution-comparability-table",
+        data.distribution_comparability_by_offer_sheet
+      );
+      setDataAnalysisBlockVisible(
+        "data-analysis-block-distribution-comparability-by-sheet",
+        hasDistributionComparability
+      );
+      setDataAnalysisSectionVisible(
+        "data-analysis-section-distribution-comparability",
+        hasDistributionComparability
+      );
+
+      const hasDashboard = data.item_count > 0;
+      setDataAnalysisSectionVisible("data-analysis-section-dashboard", hasDashboard);
+      if (hasDashboard) {
+        renderDataAnalysisDashboard(data.chart_data);
+      } else {
+        document.getElementById("data-analysis-dashboard").innerHTML = "";
+      }
+    }
+
+    function renderDataAnalysisDashboard(chartData) {
+      const offerFiles = chartData.items_per_offer.offer_files;
+      const traces = [];
+
+      for (const seriesRow of chartData.items_per_offer.series) {
+        traces.push({
+          x: offerFiles,
+          y: seriesRow.item_counts,
+          name: seriesRow.source_sheet,
+          type: "bar",
+          xaxis: "x",
+          yaxis: "y",
+        });
+      }
+
+      traces.push({
+        x: chartData.description_lengths,
+        type: "histogram",
+        name: "Length",
+        showlegend: false,
+        xaxis: "x2",
+        yaxis: "y2",
+      });
+
+      traces.push({
+        x: chartData.unit_counts.units,
+        y: chartData.unit_counts.counts,
+        type: "bar",
+        showlegend: false,
+        xaxis: "x3",
+        yaxis: "y3",
+      });
+
+      const hasUnitPrices = chartData.unit_price_histogram.length > 0;
+      const totalValueSum = chartData.total_value_by_offer.values.reduce((sum, value) => sum + value, 0);
+      let panelFourTitle;
+      let panelFourYTitle;
+
+      if (hasUnitPrices) {
+        traces.push({
+          x: chartData.unit_price_histogram,
+          type: "histogram",
+          showlegend: false,
+          xaxis: "x4",
+          yaxis: "y4",
+        });
+        panelFourTitle = "Unit price (EUR)";
+        panelFourYTitle = "Items";
+      } else if (totalValueSum > 0) {
+        traces.push({
+          x: chartData.total_value_by_offer.offer_files,
+          y: chartData.total_value_by_offer.values,
+          type: "bar",
+          showlegend: false,
+          xaxis: "x4",
+          yaxis: "y4",
+        });
+        panelFourTitle = "Offer file";
+        panelFourYTitle = "Total value";
+      } else {
+        traces.push({
+          x: ["One offer only", "Multiple offers"],
+          y: chartData.comparability_counts,
+          type: "bar",
+          showlegend: false,
+          xaxis: "x4",
+          yaxis: "y4",
+        });
+        panelFourTitle = "Item coverage";
+        panelFourYTitle = "Unique descriptions";
+      }
+
+      Plotly.newPlot("data-analysis-dashboard", traces, {
+        title: "Data analysis dashboard (" + chartData.component + ")",
+        barmode: "group",
+        grid: { rows: 2, columns: 2, pattern: "independent" },
+        xaxis: { title: "Offer file", anchor: "y" },
+        yaxis: { title: "Item count", anchor: "x" },
+        xaxis2: { title: "Characters", anchor: "y2" },
+        yaxis2: { title: "Items", anchor: "x2" },
+        xaxis3: { title: "Unit", anchor: "y3" },
+        yaxis3: { title: "Count", anchor: "x3" },
+        xaxis4: { title: panelFourTitle, anchor: "y4" },
+        yaxis4: { title: panelFourYTitle, anchor: "x4" },
+      });
+    }
+
+    function resetValidationSections() {
+      document.querySelectorAll(".validation-section").forEach(function (sectionElement) {
+        sectionElement.style.display = "none";
+      });
+      document.getElementById("validation-summary").textContent = "";
+      document.getElementById("validation-chart").innerHTML = "";
+    }
+
+    function setValidationSectionVisible(sectionId, isVisible) {
+      document.getElementById(sectionId).style.display = isVisible ? "block" : "none";
+    }
+
+    function buildQualitySummary(dataQuality) {
+      return [
+        "Rows without unit: " + dataQuality.missing_unit_count,
+        "Rows without quantity: " + dataQuality.missing_quantity_count,
+        "Rows without unit price: " + dataQuality.missing_unit_price_count,
+        "Rows without total price: " + dataQuality.missing_total_price_count,
+        "Zero prices: " + dataQuality.zero_price_count,
+        "Inconsistent totals (qty × unit ≠ total): " + dataQuality.inconsistent_total_count,
+        "Within-offer duplicate description groups: " + dataQuality.within_offer_duplicate_group_count,
+      ].join("\n");
+    }
+
+    function renderValidationChart(validationData) {
+      const currentMetrics = validationData.current_metrics;
+      const confusionCounts = [
+        [currentMetrics.true_positive, currentMetrics.false_negative],
+        [currentMetrics.false_positive, currentMetrics.true_negative],
+      ];
+      const confusionLabels = [
+        [String(currentMetrics.true_positive), String(currentMetrics.false_negative)],
+        [String(currentMetrics.false_positive), String(currentMetrics.true_negative)],
+      ];
+
+      Plotly.newPlot("validation-chart", [
+        {
+          z: confusionCounts,
+          x: ["Predicted same", "Predicted different"],
+          y: ["Actual same", "Actual different"],
+          type: "heatmap",
+          text: confusionLabels,
+          texttemplate: "%{text}",
+          textfont: { size: 18, color: "#111" },
+          xaxis: "x",
+          yaxis: "y",
+          colorscale: [[0, "#f5f9ff"], [1, "#1a4fb0"]],
+          showscale: false,
+        },
+        {
+          x: validationData.chart_data.same_item_similarities,
+          type: "histogram",
+          name: "same item pairs",
+          opacity: 0.65,
+          xbins: { size: 0.05 },
+          xaxis: "x2",
+          yaxis: "y2",
+        },
+        {
+          x: validationData.chart_data.different_item_similarities,
+          type: "histogram",
+          name: "different item pairs",
+          opacity: 0.65,
+          xbins: { size: 0.05 },
+          xaxis: "x2",
+          yaxis: "y2",
+        },
+      ], {
+        title: "Validation at threshold " + validationData.current_threshold,
+        grid: { rows: 2, columns: 1, pattern: "independent", roworder: "top to bottom" },
+        xaxis: { anchor: "y" },
+        yaxis: { anchor: "x", autorange: "reversed" },
+        xaxis2: { title: "Pair cosine similarity", range: [0, 1], anchor: "y2" },
+        yaxis2: { title: "Pair count", anchor: "x2" },
+        barmode: "overlay",
+        shapes: [{
+          type: "line",
+          x0: validationData.current_threshold,
+          x1: validationData.current_threshold,
+          xref: "x2",
+          yref: "y2 domain",
+          y0: 0,
+          y1: 1,
+          line: { dash: "dash", color: "#333", width: 2 },
+        }],
+      });
+    }
+
+    function buildValidationSummary(validationData) {
+      const currentMetrics = validationData.current_metrics;
+      const recommendedMetrics = validationData.recommended_metrics;
+      return [
+        "Validation summary",
+        "- Labeled pairs: " + validationData.labeled_pair_count +
+          " (same item: " + validationData.same_item_count +
+          ", different: " + validationData.negative_pair_count + ")",
+        "- Confusion matrix at threshold " + validationData.current_threshold + ":",
+        "    TP (correct merge) = " + currentMetrics.true_positive +
+          ", FP (wrong merge) = " + currentMetrics.false_positive,
+        "    FN (missed match) = " + currentMetrics.false_negative +
+          ", TN (correctly kept separate) = " + currentMetrics.true_negative,
+        "- Precision = " + currentMetrics.precision + ", recall = " + currentMetrics.recall +
+          ", f1 = " + currentMetrics.f1,
+        "- Recommended threshold: " + validationData.recommended_threshold +
+          " (f1 = " + recommendedMetrics.f1 + ")",
+        "- Upload more offers for richer validation (only " + validationData.same_item_count +
+          " same-item pairs auto-labeled so far)",
+        "- Set SIMILARITY_THRESHOLD in .env to change matching",
+      ].join("\n");
+    }
+
+    document.getElementById("tab-button-comparison").onclick = () => showTab("comparison");
+    document.getElementById("tab-button-data-analysis").onclick = () => showTab("data-analysis");
+    document.getElementById("tab-button-validation").onclick = () => showTab("validation");
+
+    uploadButton.onclick = async () => {
+      const file = fileInput.files[0];
+      if (!file) {
+        setStatus(message, "error", "Pick a file first.");
+        return;
+      }
+
+      setComparisonButtonsDisabled(true);
+      setStatus(
+        message,
+        "loading",
+        "Uploading " + file.name + " — detecting sheets and matching items..."
+      );
+
+      try {
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("component", componentInput.value.trim());
+
+        const response = await fetch("/upload", { method: "POST", body: formData });
+        let data = {};
+        try {
+          data = await response.json();
+        } catch (parseError) {
+          setStatus(message, "error", "Upload failed (HTTP " + response.status + "). Restart the server and try again.");
+          return;
+        }
+
+        if (!response.ok) {
+          setStatus(message, "error", formatErrorDetail(data));
+          return;
+        }
+
+        const sheetList = data.sheets && data.sheets.length ? data.sheets.join(", ") : "none";
+        setStatus(
+          message,
+          "success",
+          "Added " + data.offer_name + " — " + data.item_count + " items from sheets: " + sheetList + "."
+        );
+        fileInput.value = "";
+      } catch (error) {
+        setStatus(message, "error", "Cannot reach the server. Start it with: PYTHONPATH=src uvicorn main:app --reload");
+      } finally {
+        setComparisonButtonsDisabled(false);
+      }
+    };
+
+    downloadButton.onclick = async () => {
+      const component = componentInput.value.trim();
+      setComparisonButtonsDisabled(true);
+      setStatus(message, "loading", "Preparing comparison CSV...");
+
+      try {
+        const response = await fetch("/summary?component=" + encodeURIComponent(component));
+
+        if (!response.ok) {
+          const data = await response.json();
+          setStatus(message, "error", formatErrorDetail(data));
+          return;
+        }
+
+        const fileBlob = await response.blob();
+        const downloadLink = document.createElement("a");
+        downloadLink.href = URL.createObjectURL(fileBlob);
+        downloadLink.download = getDownloadFilename(response, "troskovnik.csv");
+        downloadLink.click();
+        URL.revokeObjectURL(downloadLink.href);
+        setStatus(message, "success", "Comparison CSV downloaded.");
+      } catch (error) {
+        setStatus(message, "error", "Download failed.");
+      } finally {
+        setComparisonButtonsDisabled(false);
+      }
+    };
+
+    runDataAnalysisButton.onclick = async () => {
+      const component = componentInput.value.trim();
+      runDataAnalysisButton.disabled = true;
+      resetDataAnalysisSections();
+      setStatus(dataAnalysisMessage, "loading", "Running data analysis on uploaded offers...");
+
+      try {
+        const response = await fetch("/data-analysis?component=" + encodeURIComponent(component));
+        const data = await response.json();
+
+        if (!response.ok) {
+          setStatus(dataAnalysisMessage, "error", formatErrorDetail(data));
+          return;
+        }
+
+        setStatus(dataAnalysisMessage, "success", "Analyzed " + data.item_count + " items.");
+        renderDataAnalysis(data);
+      } catch (error) {
+        setStatus(dataAnalysisMessage, "error", "Data analysis failed.");
+      } finally {
+        runDataAnalysisButton.disabled = false;
+      }
+    };
+
+    runValidationButton.onclick = async () => {
+      const component = componentInput.value.trim();
+      runValidationButton.disabled = true;
+      resetValidationSections();
+      setStatus(validationMessage, "loading", "Running threshold validation...");
+
+      try {
+        const response = await fetch("/validation?component=" + encodeURIComponent(component));
+        const data = await response.json();
+
+        if (!response.ok) {
+          setStatus(validationMessage, "error", formatErrorDetail(data));
+          return;
+        }
+
+        setStatus(validationMessage, "success", "Validated " + data.labeled_pair_count + " pairs.");
+        document.getElementById("validation-summary").textContent = buildValidationSummary(data);
+        setValidationSectionVisible("validation-section-summary", true);
+        renderValidationChart(data);
+        setValidationSectionVisible("validation-section-charts", true);
+      } catch (error) {
+        setStatus(validationMessage, "error", "Validation failed.");
+      } finally {
+        runValidationButton.disabled = false;
+      }
+    };
+  </script>
+</body>
+</html>

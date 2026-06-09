@@ -1,0 +1,11 @@
+.venv/
+data/
+outputs/
+uploads/
+*.db
+.env
+datasets/
+app.db
+project_task.txt
+data_analysis.txt
+plan.txt
