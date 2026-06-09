@@ -1,34 +1,32 @@
-# Pricelist Comparison Tool
+# Smart Offer Alignment
 
-This project compares Excel cost sheets (troskovnici) by aligning line items across contractor offers. The user uploads Excel files with a component label (for example `piping` or `electro`). The app detects the relevant sheets, parses rows, embeds item descriptions, matches similar items with cosine similarity, and exports one comparison CSV with all offers side by side.
-
-The implementation is the practical part of the **CDA/MLRP** course project. The report and poster describe the domain analysis, EDA, embedding model choice, threshold validation, and results.
+This project compares Excel cost sheets by aligning line items across contractor offers. The user uploads Excel files with a component label (for example `piping` or `electro`). The app detects sheets, parses rows, embeds item descriptions, matches items with cosine similarity, and exports one comparison CSV with all offers side by side.
 
 ---
 
-## 1) Project Background
+## Project Background
 
-This is a course project for **CDA/MLRP** at the Faculty of Electrical Engineering, University of Sarajevo. The supervisor is **Aida Brankovic**.
+This is a course project for **Computational Data Analytics/Machine Learning: Pattern Recognition** at the Faculty of Electrical Engineering, University of Sarajevo. The supervisor is **Prof. Aida Brankovic**.
 
-The goal is to help procurement compare multiple contractor offers in one table: same item on one row, each offer in its own columns (unit, quantity, unit price, total price). Items that appear in only one offer keep empty cells for the other offers.
+The goal is to help procurement compare contractor offers in one table. Same item on one row, each offer in its own columns (unit, quantity, unit price, total price). Items that appear in only one offer keep empty cells for the other offers.
 
-The pipeline is developed and validated on **piping** data (ViK/ViO sheets). Component-specific rules live in `constants.py` (`piping` and starter `electro` entries). Matching is scoped by component so piping items never merge with electro items.
+The pipeline is developed and validated on **piping** (ViK/ViO sheets) and **electro** data. Component rules live in `constants.py` (`piping` and `electro` entries). Matching is scoped by component so piping items never merge with electro items.
 
 ### Accompanying deliverables
 
-- **Report** — Nature Scientific Reports style (~5–6 pages): domain understanding, methods, EDA, validation, results, discussion, conclusion.
-- **Poster** — course template.
-- **This repository** — FastAPI backend and web UI.
+- **Report** — Nature Scientific Reports style (5–6 pages). Covers domain understanding, methods, EDA, validation, results, discussion, and conclusion.
+- **Poster** — template.
+- **This repository** — FastAPI backend and web UI with file upload, eda and data analysis.
 
 ---
 
-## 2) Technologies
+## Technologies
 
-| Library | Role |
+| |  |
 | -------- | ----- |
 | Python 3 | Implementation language |
 | pandas, openpyxl, xlrd | Excel loading and CSV export |
-| sentence-transformers | Local multilingual embeddings |
+| sentence-transformers | Multilingual embeddings |
 | NumPy | Cosine similarity |
 | FastAPI, uvicorn | REST API and UI server |
 | SQLAlchemy, Alembic | Database models and migrations |
@@ -40,29 +38,12 @@ All Python dependencies are listed in `requirements.txt`.
 
 ---
 
-## 3) Project Setup
+## Project Setup
 
-### Dataset
-
-Place the course Excel files in `cda_and_mlpr_project_datasets/` at the project root. **Do not commit or share these files publicly.**
-
-Expected piping files for development:
-
-| File | Piping sheet(s) |
-| ---- | ---------------- |
-| 1 Troskovnik.xls | XVII. VIK |
-| 2 Troskovnik.xls | TROŠKOVNIK (piping rows only) |
-| 3 Troskovnik.xlsx | C VIK |
-| 4 Troskovnik.xls | ViK (empty) |
-| 5 Troskovnik.xlsx | none (fasada only) |
-| 6 Troškovnik.xlsx | 3. VANJSKI ViO + 5. UNUTARNJI VIO (one offer) |
-| 8 troskovnik.xlsx | none (electro only) |
-
-There is no file 7 in the provided dataset.
 
 ### Virtual environment
 
-From the project root (`cda_mlrp/`):
+From the project root (`smart_offer_alignment/`).
 
 ```bash
 python3 -m venv .venv
@@ -72,7 +53,7 @@ pip install -r requirements.txt
 
 Copy `.env.example` to `.env` and adjust settings if needed.
 
-On first run, `sentence-transformers` downloads the embedding model from Hugging Face (public model, no API key required).
+On first run, `sentence-transformers` downloads the embedding model from Hugging Face (no API key required).
 
 ### Run the web app
 
@@ -102,17 +83,16 @@ If a file has no sheet for the requested component, the UI shows an error messag
 
 ---
 
-## 4) Project Structure
+## Project Structure
 
 ```
 cda_mlrp/
 ├── alembic/
 │   └── env.py
-├── cda_and_mlpr_project_datasets/   # local only, not in git
 ├── frontend/
 │   └── index.html
 ├── outputs/                         # comparison CSV, gitignored
-├── uploads/                         # temp uploads, gitignored
+├── uploads/                         # gitignored
 ├── src/
 │   ├── main.py
 │   ├── config.py                    # .env settings (database, thresholds, model)
@@ -129,12 +109,12 @@ cda_mlrp/
 │   │   ├── upload_offer.py
 │   │   ├── list_offers.py
 │   │   └── export_summary.py
-│   ├── repositories/                # database access
+│   ├── repositories/                # data access layer
 │   │   ├── base_repository.py
 │   │   ├── upload_offer.py
 │   │   ├── list_offers.py
 │   │   └── export_summary.py
-│   ├── utils/                       # pure logic (no database access)
+│   ├── utils/                       # logic
 │   │   ├── find_component_sheets.py
 │   │   ├── load_excel.py
 │   │   ├── parse_items.py
@@ -148,44 +128,41 @@ cda_mlrp/
 │       ├── models.py
 │       └── session.py
 ├── .env.example
-├── alembic.ini
-├── plan.txt
-├── project_task.txt
-└── requirements.txt
+└── alembic.ini
 ```
 
 ### Architecture
 
-- **Routes** call **services** (when a flow has its own repository) or orchestrate **services + utils**.
-- **Services** always have a dedicated **repository**; they may call other services for cross-flow data.
+- **Routes** call **services** or orchestrate **services plus utils**.
+- **Services** always have a **repository**. They may call other services for cross-flow data.
 - **Repositories** are the only database access layer.
-- **Utils** contain pure logic and never touch the database.
+- **Utils** contain logic and never touch the database.
 
 ### Layered backend
 
-Routes, services, and repositories use **matching names** per flow (e.g. `upload_offer`) so the stack is easy to follow. Services call their repository for DB access and other services when a flow needs cross-cutting data — logic stays in one place instead of scattered duplicates.
+Routes, services, and repositories use **matching names** per flow (e.g. `upload_offer`) so the stack is traceable. Services call their repository for DB access and other services when a flow needs cross-cutting data - logic stays in one place instead of duplicates.
 
 ### Typing
 
-Functions use **TypedDict** argument and return types in `schemas.py` so each step’s inputs and outputs are explicit when reading the code.
+Functions use **TypedDict** argument and return types in `schemas.py` so each step's inputs and outputs are defined in code (reduce bugs and improve readability).
 
 ### Naming
 
-Variables and functions use **full descriptive names** (no abbreviations) to keep the pipeline readable without extra comments.
+Variables and functions use **descriptive names** (no abbreviations) to keep the pipeline readable without comments. Our idea was to make code easy to follow, from left to right and from top down (just like a book).
 
 ### Web UI
 
-Three tabs:
+Three tabs.
 
-- **Comparison** — upload offers and download the side-by-side CSV.
-- **Data Analysis** — pre-modeling structure, quality, distribution, comparability, and charts.
-- **Validation** — threshold metrics and confusion-matrix / similarity charts.
+- **Comparison:** upload offers and download the comparison CSV.
+- **Data Analysis:** pre-modeling structure, quality, distribution, comparability, and charts.
+- **Validation:** threshold metrics and confusion-matrix / similarity charts.
 
 ---
 
-## 5) Configuration
+## Configuration
 
-Settings are loaded from `.env` via `config.py`. Static app values (paths, component keywords, sheet patterns) are in `constants.py`.
+Settings are loaded from `.env` via `config.py`. App values (paths, component keywords, sheet patterns) are in `constants.py`. At this stage, for project to be fully functional, it is enough to copy variables from .env.example to .env.
 
 | Setting | Description |
 | -------- | ----------- |
@@ -196,19 +173,31 @@ Settings are loaded from `.env` via `config.py`. Static app values (paths, compo
 | `SIMILARITY_THRESHOLD` | Item match cutoff for cosine similarity (default `0.85`) |
 | `SHEET_SIMILARITY_THRESHOLD` | Fallback embedding cutoff for sheet detection (default `0.75`) |
 
-To switch to PostgreSQL, set `DATABASE_ENGINE=postgresql` and fill in the `POSTGRES_*` variables in `.env`. Do not pass a full database URL.
+To switch to PostgreSQL, set `DATABASE_ENGINE=postgresql` and fill in the `POSTGRES_*` variables in `.env`.
 
 ---
 
-## 6) Pipeline Overview
+## Embedding Model
+
+The app uses [paraphrase-multilingual-MiniLM-L12-v2](https://huggingface.co/sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2) through `sentence-transformers`.
+
+- **Model:** Multilingual MiniLM encoder trained for semantic similarity.
+- **Why it is selected:** Item descriptions use local languages and different wording across contractors. This model supports Bosnian, Croatian, and Serbian, runs locally without an API key, and is small enough for a demo setup.
+- **Embedding type:** Dense sentence embeddings. Each description is mapped to one fixed-size numeric vector.
+- **How it works:** The app joins `parent_description` and `child_description`, encodes the text, and compares vectors with cosine similarity. Within the same component, items above `SIMILARITY_THRESHOLD` are matched to the same row.
+- **Dimensions:** 384.
+
+---
+
+## Pipeline Overview
 
 ### Sheet detection
 
-`find_component_sheets()` reads sheet names and picks component-related sheets using name patterns and embedding scores from `constants.py` (per-component labels, patterns, and keywords).
+`find_component_sheets()` reads sheet names and picks component sheets using name patterns and embedding scores from `constants.py` (per-component labels, patterns, and keywords).
 
 ### Item extraction
 
-Each row is parsed into:
+Each row is parsed into the following fields.
 
 - `parent_description`, `child_description`
 - `unit`, `quantity`, `unit_price`, `total_price`
@@ -224,7 +213,7 @@ For each new item, the app computes cosine similarity against existing items wit
 
 ### Export
 
-The final deliverable is **one CSV** named `troskovnik_DD_MM_YYYY.csv` with columns:
+The export is **one CSV** named `troskovnik_DD_MM_YYYY_HH_MM_SS.csv` with the following columns.
 
 `item | offer1_unit | offer1_qty | offer1_unit_price | offer1_total | offer2_unit | ...`
 
@@ -232,7 +221,7 @@ A `UKUPNO` row sums totals per offer where prices exist.
 
 ---
 
-## 7) API Endpoints
+## API Endpoints
 
 | Method | Path | Description |
 | ------ | ---- | ----------- |
@@ -240,16 +229,16 @@ A `UKUPNO` row sums totals per offer where prices exist.
 | `POST` | `/upload` | Upload Excel + component → detect, parse, match, save to DB |
 | `GET` | `/offers?component=piping` | List loaded offers |
 | `GET` | `/summary?component=piping` | Download comparison CSV |
-| `GET` | `/data-analysis?component=piping` | Pre-modeling data analysis — structure, cost, quality, distribution, comparability + Plotly dashboard |
-| `GET` | `/validation?component=piping` | Run threshold validation — JSON with metrics and chart series (needs 2+ offers) |
+| `GET` | `/data-analysis?component=piping` | Pre-modeling data analysis: structure, cost, quality, distribution, comparability + Plotly dashboard |
+| `GET` | `/validation?component=piping` | Run threshold validation: JSON with metrics and chart series (needs 2+ offers) |
 
-Upload errors (no component sheet, empty sheet) return HTTP 400 with a clear message.
+Upload errors (no component sheet, empty sheet) return HTTP 400 with a message.
 
 ---
 
-## 8) Database
+## Database
 
-SQLite is the default for local demo. PostgreSQL is supported via split env variables (see section 5).
+SQLite is the default for demo. PostgreSQL is supported via split env variables (see section 5).
 
 | Table | Role |
 | ----- | ---- |
@@ -257,7 +246,7 @@ SQLite is the default for local demo. PostgreSQL is supported via split env vari
 | `items` | Template items with embedding vector |
 | `offer_items` | Offer-specific unit, quantity, prices, descriptions |
 
-Tables are created on app startup. Alembic is available for migrations:
+Tables are created on app startup. Alembic is available for migrations.
 
 ```bash
 PYTHONPATH=src alembic upgrade head
@@ -265,13 +254,13 @@ PYTHONPATH=src alembic upgrade head
 
 ---
 
-## 9) Validation
+## Validation
 
-The **Validation** tab calls `GET /validation`, which loads offers from the DB and runs `utils/validate_threshold.py` on demand. It returns labeled-pair counts, current vs recommended threshold metrics, and series for a Plotly precision/recall/f1 chart. Results are not saved to disk. Set `SIMILARITY_THRESHOLD` in `.env` manually; the comparison export uses that value on every upload.
+The **Validation** tab calls `GET /validation`, which loads offers from the DB and runs `utils/validate_threshold.py` on demand. It returns labeled-pair counts, current vs recommended threshold metrics, and series for a Plotly precision/recall/f1 chart. Set `SIMILARITY_THRESHOLD` in `.env` manually. The comparison export uses that value on every upload.
 
 ---
 
-## 10) Application Flow
+## Application Flow
 
 ```
 Web UI (frontend/index.html)
@@ -280,34 +269,33 @@ Web UI (frontend/index.html)
   │     │     ├── find_component_sheets()
   │     │     ├── extract_offer_items_from_excel_file()
   │     │     ├── embed_items()
-  │     │     └── ServiceUploadOffer → RepositoryUploadOffer → DB
+  │     │     └── ServiceUploadOffer -> RepositoryUploadOffer -> DB
   │     ├── GET /offers
   │     └── GET /summary
-  │           ├── ServiceExportSummary → DB
-  │           └── write_summary_csv() → troskovnik_DD_MM_YYYY.csv
+  │           ├── ServiceExportSummary -> DB
+  │           └── write_summary_csv() -> troskovnik_DD_MM_YYYY_HH_MM_SS.csv
   └── Data Analysis tab
-        └── GET /data-analysis → run_data_analysis_from_dataframe() → JSON + 2×2 Plotly dashboard
+        └── GET /data-analysis -> run_data_analysis_from_dataframe() -> JSON + 2×2 Plotly dashboard
   └── Validation tab
-        └── GET /validation → run_validation_from_offers() → JSON + Plotly metrics chart
+        └── GET /validation -> run_validation_from_offers() -> JSON + Plotly metrics chart
 ```
 
 ---
 
-## 11) Known Limitations
+## Known Limitations
 
-- Sheet detection rules are tuned on the course piping dataset; `electro` has starter constants that may need tuning with real electro sheets.
-- Most source files have no unit prices filled in; comparison CSV shows quantities and units but often blank price columns.
-- The embedding model is downloaded on first use (~420 MB); first upload is slower.
-- This is a coursework demo, not a production procurement system.
-- Course Excel data must stay private and out of version control.
+- Sheet detection rules are tuned on the piping and electro datasets.
+- Most source files have no unit prices filled in. Comparison CSV shows quantities and units but often blank price columns.
+- The embedding model is downloaded on first use (~420 MB). First upload is slower.
+- This is a demo, not a production procurement system.
 
 ---
 
 ## Contact
 
-**Almir Mustafic** — project author.
+**Almir Mustafic** — [@AlmirMBH](https://github.com/AlmirMBH)  
+**Faris Mutapcic** — [@FarisM](https://github.com/FarisM)
 
-Team context: similar electro comparison may be developed in parallel (see `project_task.txt`).
 
 ---
 
@@ -319,7 +307,7 @@ This project is released under the MIT License.
 
 ## Acknowledgments
 
-Embedding model: [paraphrase-multilingual-MiniLM-L12-v2](https://huggingface.co/sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2) (sentence-transformers).
+The embedding model is [paraphrase-multilingual-MiniLM-L12-v2](https://huggingface.co/sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2) (sentence-transformers).
 
 **Aida Brankovic** supervised the course project.
 
@@ -327,4 +315,4 @@ Embedding model: [paraphrase-multilingual-MiniLM-L12-v2](https://huggingface.co/
 
 ## Disclaimer
 
-The troskovnik Excel datasets are provided for coursework only. They must not be committed to public repositories or shared outside the course. This tool was built for **CDA/MLRP** and is intended for local academic use.
+The troskovnik Excel datasets are provided for coursework only. They must not be committed to public repositories or shared outside the course. This tool was built for **CDA/MLRP** and is intended for academic use.
