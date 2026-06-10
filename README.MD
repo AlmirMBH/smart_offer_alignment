@@ -75,7 +75,7 @@ Open http://127.0.0.1:8000/
 
 1. Copy `.env.example` to `.env` and start the server.
 2. Open the Comparison tab, choose `piping` or `electro`, and upload at least two files for that component.
-3. Open the Validation tab and click **Run validation**. Note the recommended threshold.
+3. Open the Validation tab and click **Run validation**. The summary and chart appear on the page.
 4. Set `SIMILARITY_THRESHOLD` in `.env` to the recommended value and restart the server if you change it.
 5. Re-upload offers if you changed the threshold after the first upload.
 6. Open the Comparison tab and click **Download comparison CSV**.
@@ -222,34 +222,56 @@ EDA runs on demand and does not write files to disk.
 
 ## Evaluation
 
-The Validation tab calls `GET /validation` with at least two uploaded offers. The route runs `utils/validate_threshold.py`.
+The Validation tab calls `GET /validation` when you click **Run validation**. You need at least two uploaded offers for the same component. Results appear in a text summary and a Plotly chart on the page. No extra code is required.
 
-### Labeled pairs
+The text summary prints the following values.
 
-Positive pairs come from exact cross-offer description matches and from items merged at the current threshold. Negative pairs are sampled randomly from pairs with cosine similarity below 0.5.
+- Labeled pair count, same-item pair count, different-item pair count
+- Confusion matrix at `SIMILARITY_THRESHOLD` (TP, FP, FN, TN)
+- Precision, recall, and F1 at `SIMILARITY_THRESHOLD`
+- Recommended threshold and its F1
 
-### Metrics
+The chart shows cosine similarity histograms for same-item and different-item pairs and a vertical line at `SIMILARITY_THRESHOLD`.
 
-For each threshold from 0.50 to 0.95 the app computes precision, recall, F1, and accuracy from predicted matches vs labeled pairs.
+Labeled pairs are built in `utils/validate_threshold.py`. Positive pairs are exact cross-offer description matches plus items already merged at the current threshold. Negative pairs are random cross-offer pairs with cosine similarity below 0.5. The app sweeps thresholds from 0.50 to 0.95 and picks the recommended value as the highest precision among thresholds with recall at or above 0.5. If none qualify, it picks the highest F1.
 
-The recommended threshold is the value with recall at or above 0.5 and the highest precision. If none meet recall 0.5, the app picks the highest F1.
-
-The UI shows metrics at the current `SIMILARITY_THRESHOLD` and at the recommended value, plus similarity histograms for same-item and different-item pairs. Update `.env` manually and restart the server to apply a new threshold.
+To change matching, edit `SIMILARITY_THRESHOLD` in `.env` and restart the server.
 
 ---
 
 ## Results
 
-Metrics depend on the offers loaded in the database. Run Validation after upload to get numbers for your session.
+Validation was run on the course troskovnici loaded in the project (piping offers 1, 2, 3, and 6; electro offers 1, 6, and 8). `SIMILARITY_THRESHOLD` is 0.85.
 
-| Output | Meaning |
-| ------ | ------- |
-| Comparison CSV | One row per matched item, one column group per offer |
-| Current threshold metrics | Precision, recall, F1, and accuracy at `SIMILARITY_THRESHOLD` |
-| Recommended threshold metrics | Best trade-off from the threshold sweep |
-| Labeled pair counts | Positive and negative pairs used in evaluation |
+### Piping (4 offers, 224 template items)
 
-On course piping and electro data, semantic matching aligns items that differ in wording but refer to the same work. Most source files have blank unit prices, so totals in the CSV are often empty even when quantities match.
+| Metric | Value |
+| ------ | ----- |
+| Labeled pairs | 45 |
+| Same-item pairs | 25 |
+| Different-item pairs | 20 |
+| Precision | 1.0 |
+| Recall | 1.0 |
+| F1 | 1.0 |
+| Accuracy | 1.0 |
+| TP / FP / FN / TN | 25 / 0 / 0 / 20 |
+| Recommended threshold | 0.95 (F1 1.0) |
+
+### Electro (3 offers, 240 template items)
+
+| Metric | Value |
+| ------ | ----- |
+| Labeled pairs | 112 |
+| Same-item pairs | 92 |
+| Different-item pairs | 20 |
+| Precision | 1.0 |
+| Recall | 1.0 |
+| F1 | 1.0 |
+| Accuracy | 1.0 |
+| TP / FP / FN / TN | 92 / 0 / 0 / 20 |
+| Recommended threshold | 0.95 (F1 1.0) |
+
+The comparison CSV merges matched items into one row per template item. Most course files have blank unit prices, so price and total columns stay empty even when quantities and units align.
 
 ---
 
@@ -360,7 +382,7 @@ Web UI (frontend/index.html)
 ## Contact
 
 **Almir Mustafic** — [@AlmirMBH](https://github.com/AlmirMBH)  
-**Faris Mutapcic** — [@FarisM](https://github.com/FarisM)
+**Faris Mutapcic** — [@FarisM](https://github.com/farismutapcic)
 
 ---
 

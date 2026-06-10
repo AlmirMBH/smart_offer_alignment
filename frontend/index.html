@@ -260,6 +260,7 @@
       return fallbackFilename;
     }
 
+    function setStatus(statusElement, statusType, statusText) {
       statusElement.className = "status status-" + statusType;
       if (statusType === "loading") {
         statusElement.innerHTML = '<span class="spinner"></span>' + statusText;
