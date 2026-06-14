@@ -1,6 +1,6 @@
-# Smart Offer Alignment
+# Smart tabular analysis
 
-This project compares Excel cost sheets by aligning line items across contractor offers. The user uploads Excel files with a component label (`piping` or `electro`). The app detects sheets, parses rows, embeds item descriptions, matches items with cosine similarity, and exports one comparison CSV with all offers side by side.
+The project compares data across multiple files by identifying and aligning similar records. It extracts relevant information, applies semantic comparison to match entries, and generates an output that presents the data side by side for analysis.
 
 ---
 
@@ -64,7 +64,7 @@ Copy `.env.example` to `.env`. Default values are enough for a local run.
 
 ```bash
 source .venv/bin/activate
-PYTHONPATH=src uvicorn main:app --reload
+cd src && uvicorn main:app --reload
 ```
 
 Open http://127.0.0.1:8000/
