@@ -23,6 +23,7 @@ def build_default_settings_values() -> AppSettingsValues:
         pricing_similarity_threshold=config.PRICING_SIMILARITY_THRESHOLD,
         sheet_similarity_threshold=config.SHEET_SIMILARITY_THRESHOLD,
         auto_approve_prices=config.AUTO_APPROVE_PRICES,
+        merge_export_when_unit_matches=config.MERGE_EXPORT_WHEN_UNIT_MATCHES,
         price_approvals_page_size=config.PRICE_APPROVALS_PAGE_SIZE,
     )
 
@@ -69,6 +70,13 @@ def build_settings_values_from_stored(stored_values: dict[str, str]) -> AppSetti
         ),
         auto_approve_prices=(
             stored_values.get("auto_approve_prices", str(default_values.auto_approve_prices)).lower()
+            == "true"
+        ),
+        merge_export_when_unit_matches=(
+            stored_values.get(
+                "merge_export_when_unit_matches",
+                str(default_values.merge_export_when_unit_matches),
+            ).lower()
             == "true"
         ),
         price_approvals_page_size=int(

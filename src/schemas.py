@@ -218,6 +218,9 @@ class AppSettingsValues(BaseModel):
     pricing_similarity_threshold: int = Field(description="Price ±% for auto-approve")
     sheet_similarity_threshold: float = Field(description="Sheet name embedding match threshold")
     auto_approve_prices: bool = Field(description="Auto-approve imputed prices when gates pass")
+    merge_export_when_unit_matches: bool = Field(
+        description="Export merge requires matching quantity unit when enabled"
+    )
     price_approvals_page_size: int = Field(description="Rows per page on Price Approvals tab", ge=1)
 
 

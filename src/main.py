@@ -1,7 +1,8 @@
 from fastapi import FastAPI
 from constants import OUTPUT_DIR, UPLOAD_DIR
+from config import EMBEDDING_MODEL
 from routes import data_analysis, export_summary, home, list_offers, price_approvals, settings, upload_offer
-from clients.embedding import get_embedding_model
+from clients.embedding import load_embedding_model
 
 
 app = FastAPI()
@@ -11,7 +12,7 @@ app = FastAPI()
 def on_startup() -> None:
     UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-    get_embedding_model()
+    load_embedding_model(EMBEDDING_MODEL)
 
 
 app.include_router(home.router)

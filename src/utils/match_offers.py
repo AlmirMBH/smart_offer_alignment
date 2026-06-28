@@ -1,6 +1,6 @@
 from config import SIMILARITY_THRESHOLD
 from schemas import ItemDict, OfferDict, OfferFieldsDict, TemplateRow, VectorArray
-from clients.embedding import cosine_similarity
+from utils.cosine_similarity import find_best_cosine_match
 
 
 def build_offer_fields_from_item(item: ItemDict) -> OfferFieldsDict:
@@ -19,23 +19,17 @@ def find_best_template_match_for_item_vector(
     template_rows: list[TemplateRow],
     component: str,
 ) -> tuple[int, float]:
-    best_index = -1
-    best_similarity = -1.0
-    for index, template_vector in enumerate(template_embeddings):
-        if template_rows[index]["component"] != component:
-            continue
-        if item_vector.shape != template_vector.shape:
-            continue
-        similarity = cosine_similarity(item_vector, template_vector)
-        if similarity > best_similarity:
-            best_similarity = similarity
-            best_index = index
-    return best_index, best_similarity
+    return find_best_cosine_match(
+        item_vector,
+        template_embeddings,
+        should_compare=lambda index: template_rows[index]["component"] == component,
+    )
 
 
 def match_offers_by_embedding_similarity(
     offers: list[OfferDict],
     similarity_threshold: float = SIMILARITY_THRESHOLD,
+    merge_export_when_unit_matches: bool = False,
 ) -> list[TemplateRow]:
     template_rows: list[TemplateRow] = []
     template_embeddings: list[VectorArray] = []
@@ -50,7 +44,13 @@ def match_offers_by_embedding_similarity(
                 template_rows,
                 item["component"],
             )
-            if match_index >= 0 and best_similarity >= similarity_threshold:
+            can_merge = match_index >= 0 and best_similarity >= similarity_threshold
+            if can_merge and offer_name in template_rows[match_index]["offers"]:
+                can_merge = False
+            if can_merge and merge_export_when_unit_matches:
+                template_unit = next(iter(template_rows[match_index]["offers"].values()))["unit"].strip()
+                can_merge = item["unit"].strip() == template_unit
+            if can_merge:
                 template_row = template_rows[match_index]
                 template_row["offers"][offer_name] = build_offer_fields_from_item(item)
                 template_row["embed_text"] = template_row["embed_text"] + " || " + item["embed_text"]

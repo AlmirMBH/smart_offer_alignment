@@ -6,6 +6,7 @@ from repositories.export_summary import RepositoryExportSummary
 from repositories.settings import RepositorySettings
 from schemas import ItemDict, OfferDict, TemplateRow, VectorArray
 from utils.app_settings import build_settings_values_from_stored
+from utils.cosine_similarity import to_float_vector
 from utils.export_summary import write_summary_csv
 from utils.match_offers import match_offers_by_embedding_similarity
 
@@ -33,6 +34,7 @@ class ServiceExportSummary:
         return match_offers_by_embedding_similarity(
             offer_dicts,
             similarity_threshold=settings_values.similarity_threshold,
+            merge_export_when_unit_matches=settings_values.merge_export_when_unit_matches,
         )
 
     def export_summary_csv_by_component(self, component: str, output_dir: Path) -> Path:
@@ -60,7 +62,7 @@ class ServiceExportSummary:
                     "component": component,
                     "embed_text": item.embed_text,
                 })
-                vectors.append(np.array(item.embedding, dtype=np.float64))
+                vectors.append(to_float_vector(item.embedding))
             if items:
                 offer_dicts.append({
                     "name": offer.name,

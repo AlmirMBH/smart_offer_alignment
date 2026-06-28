@@ -1,6 +1,5 @@
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from sqlalchemy.orm import Session
-from constants import UPLOAD_DIR
 from db.session import get_db
 from schemas import UploadOfferResponse
 from services.upload_offer import ServiceUploadOffer
@@ -17,15 +16,12 @@ def route_upload_offer(
     if not file.filename:
         raise HTTPException(status_code=400, detail="Filename is required.")
 
-    offer_filename = file.filename
-    upload_path = UPLOAD_DIR / offer_filename
-    upload_path.write_bytes(file.file.read())
-
     service_upload_offer = ServiceUploadOffer(db)
-    offer, detection = service_upload_offer.upload_offer_from_excel_file(
-        upload_path, offer_filename, component
+    offer, detection = service_upload_offer.upload_offer_from_upload_file(
+        file.file.read(),
+        file.filename,
+        component,
     )
-    upload_path.unlink()
 
     if offer is None:
         raise HTTPException(status_code=400, detail=detection["message"])

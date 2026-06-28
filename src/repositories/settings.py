@@ -7,12 +7,6 @@ class RepositorySettings(BaseRepository[AppSetting]):
     def __init__(self, db: Session) -> None:
         super().__init__(db, AppSetting)
 
-    def get_setting_value(self, setting_key: str) -> str | None:
-        setting_row = self.db.query(AppSetting).filter(AppSetting.key == setting_key).first()
-        if setting_row is None:
-            return None
-        return setting_row.value
-
     def set_setting_value(self, setting_key: str, setting_value: str) -> None:
         setting_row = self.db.query(AppSetting).filter(AppSetting.key == setting_key).first()
         if setting_row is None:

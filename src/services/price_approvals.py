@@ -6,9 +6,9 @@ from schemas import (
     OfferItemDeleteResponse,
     OfferItemUpdateRequest,
     OfferItemUpdateResponse,
-    PriceApprovalRow,
     PriceApprovalsResponse,
 )
+from utils.price_approvals import build_price_approval_row
 
 
 class ServicePriceApprovals:
@@ -20,7 +20,7 @@ class ServicePriceApprovals:
     def list_price_approval_rows_by_component(self, component: str) -> PriceApprovalsResponse:
         offer_items = self.repository_price_approvals.get_offer_items_by_component(component)
         rows = [
-            PriceApprovalRow(
+            build_price_approval_row(
                 offer_item_id=offer_item.id,
                 offer_name=offer_item.offer.name,
                 embed_text=offer_item.item.embed_text,
@@ -79,16 +79,18 @@ class ServicePriceApprovals:
         offer_item.approved = update_request.approved
         self.repository_price_approvals.commit_changes()
         return OfferItemUpdateResponse(
-            offer_item_id=offer_item.id,
-            offer_name=offer_item.offer.name,
-            embed_text=offer_item.item.embed_text,
-            unit=offer_item.unit,
-            quantity=offer_item.quantity,
-            unit_price=offer_item.unit_price,
-            total_price=offer_item.total_price,
-            source_sheet=offer_item.source_sheet,
-            approved=offer_item.approved,
-            auto_approved=offer_item.auto_approved,
+            **build_price_approval_row(
+                offer_item_id=offer_item.id,
+                offer_name=offer_item.offer.name,
+                embed_text=offer_item.item.embed_text,
+                unit=offer_item.unit,
+                quantity=offer_item.quantity,
+                unit_price=offer_item.unit_price,
+                total_price=offer_item.total_price,
+                source_sheet=offer_item.source_sheet,
+                approved=offer_item.approved,
+                auto_approved=offer_item.auto_approved,
+            ).model_dump()
         )
 
     def delete_offer_item(self, component: str, offer_item_id: int) -> OfferItemDeleteResponse | None:

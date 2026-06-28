@@ -15,6 +15,27 @@ from schemas import (
     TotalsByOfferRow,
     QualityByOfferSheetRow,
 )
+from utils.price_imputation import calculate_total_price
+from utils.text import is_blank_or_nan_text, truncate_text
+
+
+def iter_offer_sheet_groups(items_dataframe: pd.DataFrame):
+    for offer_file, offer_group in items_dataframe.groupby("offer_file"):
+        for source_sheet, sheet_group in offer_group.groupby("source_sheet"):
+            yield offer_file, source_sheet, sheet_group
+
+
+def sum_total_price(sheet_group: pd.DataFrame) -> float:
+    return float(sheet_group["total_price"].fillna(0).sum())
+
+
+def build_price_stats_row(scope: str, unit_prices: pd.Series) -> PriceStatsRow:
+    return {
+        "scope": scope,
+        "avg_unit_price": float(unit_prices.mean()),
+        "min_unit_price": float(unit_prices.min()),
+        "max_unit_price": float(unit_prices.max()),
+    }
 
 
 def normalized_embed_text(items_dataframe: pd.DataFrame) -> pd.Series:
@@ -23,7 +44,7 @@ def normalized_embed_text(items_dataframe: pd.DataFrame) -> pd.Series:
 
 def count_missing_unit_rows(sheet_group: pd.DataFrame) -> int:
     unit_series = sheet_group["unit"].astype(str).str.strip()
-    return int(unit_series.isna().sum() + (unit_series == "").sum() + (unit_series == "nan").sum())
+    return int(unit_series.isna().sum() + unit_series.apply(is_blank_or_nan_text).sum())
 
 
 def count_missing_quantity_rows(sheet_group: pd.DataFrame) -> int:
@@ -37,7 +58,7 @@ def count_inconsistent_total_rows(items_dataframe: pd.DataFrame) -> int:
         unit_price = row["unit_price"]
         total_price = row["total_price"]
         if pd.notna(quantity) and pd.notna(unit_price) and pd.notna(total_price):
-            if abs(quantity * unit_price - total_price) > 0.01:
+            if abs(calculate_total_price(quantity, unit_price) - total_price) > 0.01:
                 inconsistent_count += 1
     return inconsistent_count
 
@@ -52,30 +73,28 @@ def count_within_offer_duplicate_groups(items_dataframe: pd.DataFrame) -> int:
 
 def build_summary_by_offer_sheet_table(items_dataframe: pd.DataFrame) -> pd.DataFrame:
     summary_rows = []
-    for offer_file, offer_group in items_dataframe.groupby("offer_file"):
-        for source_sheet, sheet_group in offer_group.groupby("source_sheet"):
-            summary_rows.append({
-                "offer_file": offer_file,
-                "source_sheet": source_sheet,
-                "item_count": len(sheet_group),
-                "total_value": float(sheet_group["total_price"].fillna(0).sum()),
-                "avg_embed_text_length": round(float(sheet_group["embed_text"].str.len().mean()), 1),
-            })
+    for offer_file, source_sheet, sheet_group in iter_offer_sheet_groups(items_dataframe):
+        summary_rows.append({
+            "offer_file": offer_file,
+            "source_sheet": source_sheet,
+            "item_count": len(sheet_group),
+            "total_value": sum_total_price(sheet_group),
+            "avg_embed_text_length": round(float(sheet_group["embed_text"].str.len().mean()), 1),
+        })
     return pd.DataFrame(summary_rows)
 
 
 def build_quality_by_offer_sheet_table(items_dataframe: pd.DataFrame) -> pd.DataFrame:
     quality_rows = []
-    for offer_file, offer_group in items_dataframe.groupby("offer_file"):
-        for source_sheet, sheet_group in offer_group.groupby("source_sheet"):
-            quality_rows.append({
-                "offer_file": offer_file,
-                "source_sheet": source_sheet,
-                "rows_without_unit": count_missing_unit_rows(sheet_group),
-                "rows_without_quantity": count_missing_quantity_rows(sheet_group),
-                "rows_without_unit_price": int(sheet_group["unit_price"].isna().sum()),
-                "rows_without_total_price": int(sheet_group["total_price"].isna().sum()),
-            })
+    for offer_file, source_sheet, sheet_group in iter_offer_sheet_groups(items_dataframe):
+        quality_rows.append({
+            "offer_file": offer_file,
+            "source_sheet": source_sheet,
+            "rows_without_unit": count_missing_unit_rows(sheet_group),
+            "rows_without_quantity": count_missing_quantity_rows(sheet_group),
+            "rows_without_unit_price": int(sheet_group["unit_price"].isna().sum()),
+            "rows_without_total_price": int(sheet_group["total_price"].isna().sum()),
+        })
     return pd.DataFrame(quality_rows)
 
 
@@ -95,7 +114,7 @@ def build_cost_by_offer_table(items_dataframe: pd.DataFrame) -> pd.DataFrame:
     for offer_file, offer_group in items_dataframe.groupby("offer_file"):
         cost_rows.append({
             "offer_file": offer_file,
-            "total_value": float(offer_group["total_price"].fillna(0).sum()),
+            "total_value": sum_total_price(offer_group),
             "item_count": len(offer_group),
         })
     return pd.DataFrame(cost_rows)
@@ -103,13 +122,12 @@ def build_cost_by_offer_table(items_dataframe: pd.DataFrame) -> pd.DataFrame:
 
 def build_cost_by_offer_sheet_table(items_dataframe: pd.DataFrame) -> pd.DataFrame:
     cost_rows = []
-    for offer_file, offer_group in items_dataframe.groupby("offer_file"):
-        for source_sheet, sheet_group in offer_group.groupby("source_sheet"):
-            cost_rows.append({
-                "offer_file": offer_file,
-                "source_sheet": source_sheet,
-                "total_value": float(sheet_group["total_price"].fillna(0).sum()),
-            })
+    for offer_file, source_sheet, sheet_group in iter_offer_sheet_groups(items_dataframe):
+        cost_rows.append({
+            "offer_file": offer_file,
+            "source_sheet": source_sheet,
+            "total_value": sum_total_price(sheet_group),
+        })
     return pd.DataFrame(cost_rows)
 
 
@@ -117,21 +135,11 @@ def build_price_stats_table(items_dataframe: pd.DataFrame) -> list[PriceStatsRow
     price_stats_rows: list[PriceStatsRow] = []
     all_prices = items_dataframe["unit_price"].dropna()
     if len(all_prices):
-        price_stats_rows.append({
-            "scope": "all_offers",
-            "avg_unit_price": float(all_prices.mean()),
-            "min_unit_price": float(all_prices.min()),
-            "max_unit_price": float(all_prices.max()),
-        })
+        price_stats_rows.append(build_price_stats_row("all_offers", all_prices))
     for offer_file, offer_group in items_dataframe.groupby("offer_file"):
         offer_prices = offer_group["unit_price"].dropna()
         if len(offer_prices):
-            price_stats_rows.append({
-                "scope": offer_file,
-                "avg_unit_price": float(offer_prices.mean()),
-                "min_unit_price": float(offer_prices.min()),
-                "max_unit_price": float(offer_prices.max()),
-            })
+            price_stats_rows.append(build_price_stats_row(offer_file, offer_prices))
     return price_stats_rows
 
 
@@ -145,7 +153,7 @@ def build_top_items_by_total_table(items_dataframe: pd.DataFrame, limit: int = 1
         for _, item_row in offer_items.iterrows():
             top_item_rows.append({
                 "offer_file": offer_file,
-                "embed_text": str(item_row["embed_text"])[:80],
+                "embed_text": truncate_text(str(item_row["embed_text"])),
                 "total_price": float(item_row["total_price"]),
             })
     return pd.DataFrame(top_item_rows)
@@ -153,9 +161,8 @@ def build_top_items_by_total_table(items_dataframe: pd.DataFrame, limit: int = 1
 
 def build_data_quality_summary(items_dataframe: pd.DataFrame) -> DataQualitySummary:
     missing_unit_count = 0
-    for _, offer_group in items_dataframe.groupby("offer_file"):
-        for _, sheet_group in offer_group.groupby("source_sheet"):
-            missing_unit_count += count_missing_unit_rows(sheet_group)
+    for _, _, sheet_group in iter_offer_sheet_groups(items_dataframe):
+        missing_unit_count += count_missing_unit_rows(sheet_group)
 
     zero_price_count = int(
         ((items_dataframe["unit_price"] == 0) | (items_dataframe["total_price"] == 0)).sum()
@@ -197,25 +204,24 @@ def build_distribution_comparability_by_offer_sheet_table(items_dataframe: pd.Da
     normalized = normalized_embed_text(items_dataframe)
     offer_count_by_text = items_dataframe.groupby(normalized)["offer_file"].nunique()
     distribution_comparability_rows = []
-    for offer_file, offer_group in items_dataframe.groupby("offer_file"):
-        for source_sheet, sheet_group in offer_group.groupby("source_sheet"):
-            sheet_texts = normalized_embed_text(sheet_group)
-            within_sheet_counts = sheet_texts.value_counts()
-            shared_with_other_offers = 0
-            offer_only_descriptions = 0
-            for description_text in sheet_texts.unique():
-                if offer_count_by_text[description_text] > 1:
-                    shared_with_other_offers += 1
-                else:
-                    offer_only_descriptions += 1
-            distribution_comparability_rows.append({
-                "offer_file": offer_file,
-                "source_sheet": source_sheet,
-                "unique_descriptions": int(sheet_texts.nunique()),
-                "repeated_descriptions": int((within_sheet_counts > 1).sum()),
-                "shared_with_other_offers": shared_with_other_offers,
-                "offer_only_descriptions": offer_only_descriptions,
-            })
+    for offer_file, source_sheet, sheet_group in iter_offer_sheet_groups(items_dataframe):
+        sheet_texts = normalized_embed_text(sheet_group)
+        within_sheet_counts = sheet_texts.value_counts()
+        shared_with_other_offers = 0
+        offer_only_descriptions = 0
+        for description_text in sheet_texts.unique():
+            if offer_count_by_text[description_text] > 1:
+                shared_with_other_offers += 1
+            else:
+                offer_only_descriptions += 1
+        distribution_comparability_rows.append({
+            "offer_file": offer_file,
+            "source_sheet": source_sheet,
+            "unique_descriptions": int(sheet_texts.nunique()),
+            "repeated_descriptions": int((within_sheet_counts > 1).sum()),
+            "shared_with_other_offers": shared_with_other_offers,
+            "offer_only_descriptions": offer_only_descriptions,
+        })
     return pd.DataFrame(distribution_comparability_rows)
 
 

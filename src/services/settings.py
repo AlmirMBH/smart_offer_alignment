@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
-from clients.embedding import schedule_embedding_model_reload
-from clients.price_imputation import clear_price_catalog_cache, invalidate_price_imputation_model_cache
+from clients.embedding import clear_model_cache
+from utils.internet_price_catalog import clear_price_catalog_cache
 from repositories.settings import RepositorySettings
 from schemas import AppSettingsValues
 from utils.app_settings import build_settings_values_from_stored
@@ -39,6 +39,10 @@ class ServiceSettings:
             "true" if settings_values.auto_approve_prices else "false",
         )
         repository.set_setting_value(
+            "merge_export_when_unit_matches",
+            "true" if settings_values.merge_export_when_unit_matches else "false",
+        )
+        repository.set_setting_value(
             "price_approvals_page_size",
             str(settings_values.price_approvals_page_size),
         )
@@ -52,8 +56,13 @@ class ServiceSettings:
         saved_values: AppSettingsValues,
     ) -> None:
         if saved_values.embedding_model != previous_values.embedding_model:
-            schedule_embedding_model_reload(saved_values.embedding_model)
+            clear_model_cache(previous_values.embedding_model)
+            clear_model_cache(saved_values.embedding_model)
         if saved_values.price_imputation_model != previous_values.price_imputation_model:
-            invalidate_price_imputation_model_cache()
+            for model_name in {
+                previous_values.price_imputation_model,
+                saved_values.price_imputation_model,
+            }:
+                clear_model_cache(model_name)
         if saved_values.preferred_websites != previous_values.preferred_websites:
             clear_price_catalog_cache()

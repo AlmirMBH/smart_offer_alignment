@@ -1,16 +1,17 @@
 from pathlib import Path
-
 from constants import (
     COMPONENT_LABELS,
-    COMPONENT_ROW_FILTER_SHEETS,
     COMPONENT_SHEET_PATTERNS,
     SKIP_SHEET_KEYWORDS,
 )
-from config import SHEET_SIMILARITY_THRESHOLD as DEFAULT_SHEET_SIMILARITY_THRESHOLD
-from schemas import DetectionResult, SheetDetail, SheetScore
-from clients.embedding import cosine_similarity, embed_texts
+from schemas import DetectionResult, SheetDetail, SheetScore, VectorArray
+from utils.cosine_similarity import cosine_similarity
 from utils.load_excel import list_workbook_sheet_names, read_sheet_items
 from utils.parse_items import sheet_uses_component_row_filter
+
+
+def component_label_texts(component: str) -> list[str]:
+    return COMPONENT_LABELS.get(component, [component])
 
 
 def is_skip_sheet_name(sheet_name: str) -> bool:
@@ -21,18 +22,18 @@ def is_skip_sheet_name(sheet_name: str) -> bool:
 def is_component_sheet_by_name(sheet_name: str, component: str) -> bool:
     if is_skip_sheet_name(sheet_name):
         return False
-    exact_sheet_names = COMPONENT_ROW_FILTER_SHEETS.get(component, ())
-    if sheet_name.strip().upper() in exact_sheet_names:
+    if sheet_uses_component_row_filter(sheet_name, component):
         return True
     sheet_patterns = COMPONENT_SHEET_PATTERNS.get(component, ())
     return any(pattern.search(sheet_name) for pattern in sheet_patterns)
 
 
-def score_sheet_names(sheet_names: list[str], component: str) -> list[SheetScore]:
-    component_texts = COMPONENT_LABELS.get(component, [component])
-    component_vectors = embed_texts(component_texts)
-    sheet_vectors = embed_texts(sheet_names)
-
+def score_sheet_names(
+    sheet_names: list[str],
+    component: str,
+    component_vectors: VectorArray,
+    sheet_vectors: VectorArray,
+) -> list[SheetScore]:
     sheet_scores: list[SheetScore] = []
     for sheet_index, sheet_name in enumerate(sheet_names):
         if is_skip_sheet_name(sheet_name):
@@ -74,11 +75,8 @@ def select_component_sheets(
     if name_matches:
         return name_matches
 
-    single_sheet_names = COMPONENT_ROW_FILTER_SHEETS.get(component, ())
-    if len(sheet_names) == 1 and single_sheet_names:
-        only_sheet = sheet_names[0]
-        if only_sheet.strip().upper() in single_sheet_names:
-            return [only_sheet]
+    if len(sheet_names) == 1 and sheet_uses_component_row_filter(sheet_names[0], component):
+        return [sheet_names[0]]
 
     return [
         row["sheet_name"]
@@ -101,10 +99,17 @@ def count_sheet_items(file_path: Path | str, sheet_name: str, component: str) ->
 def find_component_sheets(
     file_path: Path | str,
     component: str,
-    sheet_similarity_threshold: float = DEFAULT_SHEET_SIMILARITY_THRESHOLD,
+    sheet_similarity_threshold: float,
+    component_vectors: VectorArray,
+    sheet_vectors: VectorArray,
 ) -> DetectionResult:
     sheet_names = list_workbook_sheet_names(file_path)
-    sheet_scores = score_sheet_names(sheet_names, component)
+    sheet_scores = score_sheet_names(
+        sheet_names,
+        component,
+        component_vectors,
+        sheet_vectors,
+    )
     selected_sheets = select_component_sheets(
         sheet_names,
         sheet_scores,

@@ -1,17 +1,23 @@
-import numpy as np
 from pathlib import Path
 from sqlalchemy.orm import Session
+from constants import UPLOAD_DIR
 from db.models import Offer, OfferItem
-from clients.embedding import cosine_similarity, embed_items
-from clients.price_imputation import impute_unit_price
+from clients.embedding import encode_texts
+from clients.web import fetch_page_text
 from repositories.price_approvals import RepositoryPriceApprovals
 from repositories.settings import RepositorySettings
 from repositories.upload_offer import RepositoryUploadOffer
 from schemas import AppSettingsValues, DetectionResult, VectorArray
 from utils.app_settings import build_settings_values_from_stored
-from utils.extract_offer import extract_offer_items_from_excel_file
+from utils.clean_embed_text import clean_embed_text
+from utils.cosine_similarity import find_best_cosine_match, to_float_vector
+from utils.extract_offer import parse_offer_items_from_detection
+from utils.find_component_sheets import component_label_texts, find_component_sheets
+from utils.internet_price_catalog import get_price_catalog_for_websites, parse_preferred_websites
+from utils.load_excel import list_workbook_sheet_names
 from utils.price_imputation import (
     calculate_total_price,
+    find_best_catalog_price,
     price_is_missing,
     should_auto_approve_imputed_price,
 )
@@ -27,6 +33,20 @@ class ServiceUploadOffer:
         self.repository_price_approvals = RepositoryPriceApprovals(db)
         self.repository_settings = RepositorySettings(db)
 
+    def upload_offer_from_upload_file(
+        self,
+        file_bytes: bytes,
+        offer_name: str,
+        component: str,
+    ) -> tuple[Offer | None, DetectionResult]:
+        upload_path = UPLOAD_DIR / offer_name
+        upload_path.write_bytes(file_bytes)
+        try:
+            return self.upload_offer_from_excel_file(upload_path, offer_name, component)
+        finally:
+            if upload_path.exists():
+                upload_path.unlink()
+
     def upload_offer_from_excel_file(
         self,
         file_path: Path | str,
@@ -36,15 +56,23 @@ class ServiceUploadOffer:
         settings_values = build_settings_values_from_stored(
             self.repository_settings.get_all_setting_values()
         )
-        items, detection, _ = extract_offer_items_from_excel_file(
+        embedding_model_name = settings_values.embedding_model
+        sheet_names = list_workbook_sheet_names(file_path)
+        component_vectors = encode_texts(embedding_model_name, component_label_texts(component))
+        sheet_vectors = encode_texts(embedding_model_name, sheet_names)
+        detection = find_component_sheets(
             file_path,
-            component=component,
-            sheet_similarity_threshold=settings_values.sheet_similarity_threshold,
+            component,
+            settings_values.sheet_similarity_threshold,
+            component_vectors,
+            sheet_vectors,
         )
+        items, _ = parse_offer_items_from_detection(file_path, component, detection)
         if detection["status"] != "ok":
             return None, detection
 
-        items, vectors = embed_items(items)
+        cleaned_texts = [clean_embed_text(item["embed_text"]) for item in items]
+        vectors = encode_texts(embedding_model_name, cleaned_texts)
         repository_upload_offer = self.repository_upload_offer
         offer = repository_upload_offer.create_offer(offer_name, component)
         offer_items_for_imputation: list[tuple[OfferItem, VectorArray, str]] = []
@@ -91,10 +119,9 @@ class ServiceUploadOffer:
                 offer_item.auto_approved = False
                 continue
 
-            imputed_unit_price = impute_unit_price(
+            imputed_unit_price = self.impute_unit_price_from_internet(
                 embed_text,
-                settings_values.price_imputation_model,
-                settings_values.preferred_websites,
+                settings_values,
             )
             if imputed_unit_price is None:
                 offer_item.approved = False
@@ -133,18 +160,36 @@ class ServiceUploadOffer:
         approved_offer_items = (
             self.repository_price_approvals.get_approved_offer_items_with_prices_by_component(component)
         )
-        best_reference_unit_price = None
-        best_similarity = -1.0
+        reference_vectors = [
+            to_float_vector(approved_offer_item.item.embedding)
+            for approved_offer_item in approved_offer_items
+        ]
+        best_index, _ = find_best_cosine_match(
+            item_vector,
+            reference_vectors,
+            should_compare=lambda index: approved_offer_items[index].id != exclude_offer_item_id,
+            minimum_similarity=item_similarity_threshold_pricing,
+        )
+        if best_index < 0:
+            return None
+        return approved_offer_items[best_index].unit_price
 
-        for approved_offer_item in approved_offer_items:
-            if approved_offer_item.id == exclude_offer_item_id:
-                continue
-            reference_vector = np.array(approved_offer_item.item.embedding, dtype=np.float64)
-            if reference_vector.shape != item_vector.shape:
-                continue
-            similarity = cosine_similarity(item_vector, reference_vector)
-            if similarity >= item_similarity_threshold_pricing and similarity > best_similarity:
-                best_similarity = similarity
-                best_reference_unit_price = approved_offer_item.unit_price
+    def impute_unit_price_from_internet(
+        self,
+        item_description: str,
+        settings_values: AppSettingsValues,
+    ) -> float | None:
+        preferred_websites = parse_preferred_websites(settings_values.preferred_websites)
+        if not preferred_websites:
+            return None
 
-        return best_reference_unit_price
+        page_texts = [fetch_page_text(website_url) for website_url in preferred_websites]
+        catalog = get_price_catalog_for_websites(preferred_websites, page_texts)
+        if not catalog:
+            return None
+
+        price_imputation_model_name = settings_values.price_imputation_model
+        item_vector = encode_texts(price_imputation_model_name, [item_description])[0]
+        catalog_descriptions = [catalog_row[0] for catalog_row in catalog]
+        catalog_vectors = encode_texts(price_imputation_model_name, catalog_descriptions)
+        return find_best_catalog_price(catalog, item_vector, catalog_vectors)

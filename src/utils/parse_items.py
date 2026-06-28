@@ -2,6 +2,8 @@ import re
 import pandas as pd
 from constants import COMPONENT_ITEM_KEYWORDS, COMPONENT_ROW_FILTER_SHEETS
 from schemas import ColumnMap, ItemDict
+from utils.price_imputation import calculate_total_price
+from utils.text import truncate_text
 
 
 def sheet_uses_component_row_filter(sheet_name: str, component: str) -> bool:
@@ -79,7 +81,7 @@ def apply_prices(
     unit_price = clean_price_value(unit_price)
     total_price = clean_price_value(total_price)
     if quantity and unit_price and not total_price:
-        total_price = quantity * unit_price
+        total_price = calculate_total_price(quantity, unit_price)
     elif quantity and total_price and not unit_price:
         unit_price = total_price / quantity
     return unit_price, total_price
@@ -131,7 +133,7 @@ def extract_items(
                 continue
 
             if filter_component_only and not is_component_row(parent_description, child_description, component):
-                dropped_rows.append(f"non-{component}: {build_embed_text(parent_description, child_description)[:80]}")
+                dropped_rows.append(f"non-{component}: {truncate_text(build_embed_text(parent_description, child_description))}")
                 continue
 
             unit_price_value, total_price_value = apply_prices(

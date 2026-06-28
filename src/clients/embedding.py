@@ -1,51 +1,28 @@
 import numpy as np
 from sentence_transformers import SentenceTransformer
-from config import EMBEDDING_MODEL
-from schemas import ParsedItemDict, VectorArray
+from schemas import VectorArray
+
+_models_by_name: dict[str, SentenceTransformer] = {}
 
 
-_embedding_model: SentenceTransformer | None = None
-_active_embedding_model_name: str | None = None
-_pending_embedding_model_name: str | None = None
+def _load_model(model_name: str) -> SentenceTransformer:
+    if model_name not in _models_by_name:
+        _models_by_name[model_name] = SentenceTransformer(model_name)
+    return _models_by_name[model_name]
 
 
-def get_embedding_model() -> SentenceTransformer:
-    global _embedding_model, _active_embedding_model_name, _pending_embedding_model_name
-    model_name = _pending_embedding_model_name or _active_embedding_model_name or EMBEDDING_MODEL
-    if _embedding_model is None or _active_embedding_model_name != model_name:
-        _embedding_model = SentenceTransformer(model_name)
-        _active_embedding_model_name = model_name
-        _pending_embedding_model_name = None
-    return _embedding_model
-
-
-def schedule_embedding_model_reload(embedding_model_name: str) -> None:
-    global _embedding_model, _active_embedding_model_name, _pending_embedding_model_name
-    if _active_embedding_model_name == embedding_model_name and _embedding_model is not None:
-        return
-    _embedding_model = None
-    _active_embedding_model_name = None
-    _pending_embedding_model_name = embedding_model_name
-
-
-def embedding_dimensions() -> int:
-    return get_embedding_model().get_sentence_embedding_dimension()
-
-
-def embed_texts(texts: list[str]) -> VectorArray:
+def encode_texts(model_name: str, texts: list[str]) -> VectorArray:
     if not texts:
         return np.array([])
-    return get_embedding_model().encode(texts, show_progress_bar=False)
+    return _load_model(model_name).encode(texts, show_progress_bar=False)
 
 
-def cosine_similarity(vector_a: VectorArray, vector_b: VectorArray) -> float:
-    return float(np.dot(vector_a, vector_b) / (np.linalg.norm(vector_a) * np.linalg.norm(vector_b)))
+def load_embedding_model(model_name: str) -> None:
+    _load_model(model_name)
 
 
-def embed_items(items: list[ParsedItemDict]) -> tuple[list[ParsedItemDict], VectorArray]:
-    texts = [item["embed_text"] for item in items]
-    vectors = embed_texts(texts)
-    return items, vectors
+def clear_model_cache(model_name: str) -> None:
+    _models_by_name.pop(model_name, None)
 
 
 # MODELS
