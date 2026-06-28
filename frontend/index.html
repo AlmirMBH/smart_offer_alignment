@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>Troskovnik comparison</title>
+  <title>Bill of Quantities Analyzer</title>
   <style>
     * { box-sizing: border-box; }
     body { margin: 0; font-family: system-ui, sans-serif; color: #e8e8e8; background: #000; }
@@ -44,22 +44,111 @@
       background: #1a2a44;
       border-color: #2a4a7a;
     }
-    .page-content { max-width: 1100px; margin: 0 auto; padding: 1.25rem; min-height: calc(100vh - 3.5rem); }
+    .page-content { max-width: 1100px; margin: 0 auto; padding: 2.5rem 1.25rem 1.25rem; min-height: calc(100vh - 3.5rem); }
+    .page-content:has(#panel-price-approvals.active) { max-width: 1260px; }
     .tab-panel { display: none; }
     .tab-panel.active { display: block; }
     #panel-comparison.active {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-height: calc(100vh - 5rem);
+      display: block;
     }
-    .comparison-center {
+    .comparison-landing {
       width: 100%;
-      max-width: 32rem;
-      text-align: center;
+      max-width: 52rem;
+      margin: 0 auto;
+    }
+    .comparison-hero {
+      text-align: left;
+      padding: 1.5rem 1.25rem;
+      margin-bottom: 1.5rem;
+      background: #111;
+      border: 1px solid #333;
+      border-radius: 6px;
+    }
+    .comparison-hero h2 {
+      margin: 0 0 1.25rem;
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: #fff;
+    }
+    .comparison-hero-split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+      align-items: start;
+    }
+    .comparison-hero-left,
+    .comparison-hero-right {
+      min-width: 0;
+    }
+    .comparison-hero-left {
+      overflow: hidden;
+    }
+    .comparison-hero-left .comparison-upload-block {
+      max-width: none;
+      margin: 0;
+    }
+    .comparison-hero-left #message {
+      max-width: none;
+      margin: 0.75rem 0 0;
+    }
+    .comparison-upload-block label {
+      display: block;
+    }
+    .comparison-upload-block select,
+    .comparison-upload-block input[type="file"] {
+      display: block;
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
+      margin-top: 0.35rem;
+    }
+    .comparison-hero-right .comparison-intro {
+      margin: 0;
+    }
+    .comparison-step-cards {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    .comparison-step-card {
+      display: block;
+      width: 100%;
+      padding: 1rem;
+      text-align: left;
+      background: #111;
+      border: 1px solid #333;
+      border-radius: 6px;
+      color: #e8e8e8;
+      cursor: pointer;
+    }
+    .comparison-step-card:hover {
+      border-color: #2a4a7a;
+      background: #151515;
+    }
+    .comparison-step-card-number {
+      display: block;
+      margin-bottom: 0.35rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #7eb8ff;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .comparison-step-card-title {
+      display: block;
+      margin-bottom: 0.35rem;
+      font-size: 1rem;
+      font-weight: 600;
+      color: #fff;
+    }
+    .comparison-step-card-text {
+      display: block;
+      font-size: 0.9rem;
+      color: #aaa;
+      line-height: 1.4;
     }
     .comparison-intro {
-      margin: 0 0 1.5rem;
       color: #aaa;
       line-height: 1.5;
     }
@@ -68,7 +157,7 @@
       display: flex;
       flex-wrap: wrap;
       gap: 0.5rem;
-      justify-content: center;
+      justify-content: flex-start;
       margin-top: 1rem;
     }
     #message { text-align: left; }
@@ -86,10 +175,190 @@
       border-radius: 4px;
     }
     button:not(.tab-button):hover { background: #333; }
-    input, select { background: #111; color: #e8e8e8; border: 1px solid #444; padding: 0.3rem 0.5rem; }
+    input, select, textarea { background: #111; color: #e8e8e8; border: 1px solid #444; padding: 0.3rem 0.5rem; font: inherit; }
     #data-analysis-dashboard { width: 100%; max-width: 1000px; height: 700px; margin-bottom: 1.5rem; }
     #validation-chart { width: 100%; max-width: 1000px; height: 800px; margin-bottom: 1.5rem; }
-    #message, #data-analysis-message, #validation-message { min-height: 1.5rem; }
+    #message, #comparison-export-message, #data-analysis-message, #price-approvals-message, #settings-message { min-height: 1.5rem; }
+    #comparison-export-message {
+      margin: -1rem 0 1.5rem;
+    }
+    .comparison-uploads-card {
+      margin-top: 0.5rem;
+      padding: 1.5rem 1.25rem;
+      background: linear-gradient(180deg, #141414 0%, #111 100%);
+      border: 1px solid #333;
+      border-radius: 6px;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    }
+    .comparison-uploads-card-header {
+      margin-bottom: 1.25rem;
+    }
+    .comparison-uploads-card h2 {
+      margin: 0 0 0.35rem;
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: #fff;
+    }
+    .comparison-uploads-card-subtitle {
+      margin: 0;
+      color: #888;
+      font-size: 0.9rem;
+      line-height: 1.4;
+    }
+    .comparison-uploads-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+    }
+    .comparison-upload-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      padding: 0.85rem 1rem;
+      background: #0c0c0c;
+      border: 1px solid #2a2a2a;
+      border-radius: 6px;
+      transition: border-color 0.15s ease, background 0.15s ease;
+    }
+    .comparison-upload-item:hover {
+      border-color: #2a4a7a;
+      background: #101010;
+    }
+    .comparison-upload-item-name {
+      min-width: 0;
+      font-weight: 600;
+      color: #fff;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .comparison-upload-item-date {
+      flex-shrink: 0;
+      font-size: 0.85rem;
+      color: #7eb8ff;
+      white-space: nowrap;
+    }
+    .comparison-uploads-empty {
+      margin: 0;
+      padding: 1rem;
+      text-align: center;
+      color: #888;
+      background: #0c0c0c;
+      border: 1px dashed #333;
+      border-radius: 6px;
+    }
+    .price-approvals-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem 1rem;
+      margin-bottom: 0.5rem;
+    }
+    .price-approvals-toolbar-actions,
+    .price-approvals-toolbar-filter {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .price-approvals-action-buttons {
+      display: flex;
+      flex-direction: column;
+      flex-wrap: nowrap;
+      align-items: center;
+      justify-content: center;
+      gap: 0.35rem;
+    }
+    .price-approvals-action-buttons button {
+      width: 5.25rem;
+      text-align: center;
+    }
+    #price-approvals-table-wrap .price-approvals-action-cell {
+      width: 6rem;
+      max-width: 6rem;
+      text-align: center;
+      vertical-align: middle;
+    }
+    #price-approvals-table-wrap .price-approvals-quantity-cell {
+      width: 4.75rem;
+      max-width: 4.75rem;
+    }
+    #price-approvals-table-wrap .price-approvals-unit-price-cell {
+      width: 6rem;
+      max-width: 6rem;
+    }
+    #price-approvals-table-wrap {
+      max-height: none;
+      overflow: visible;
+      width: 100%;
+    }
+    #price-approvals-table-wrap table {
+      width: 100%;
+      table-layout: fixed;
+      margin: 0 auto;
+    }
+    #price-approvals-table-wrap th {
+      white-space: nowrap;
+    }
+    #price-approvals-table-wrap table th:first-child,
+    #price-approvals-table-wrap table td:first-child {
+      width: 2.25rem;
+      max-width: 2.25rem;
+      text-align: center;
+    }
+    #price-approvals-table-wrap .price-approvals-offer-cell {
+      width: 14%;
+      min-width: 12rem;
+    }
+    #price-approvals-table-wrap .price-approvals-embed-text-cell {
+      width: 26%;
+      min-width: 14rem;
+    }
+    #price-approvals-table-wrap .price-approvals-unit-cell {
+      width: 4rem;
+      max-width: 4rem;
+    }
+    #price-approvals-table-wrap .price-approvals-total-price-cell {
+      width: 6rem;
+      max-width: 6rem;
+    }
+    #price-approvals-table-wrap .price-approvals-offer-cell input,
+    #price-approvals-table-wrap .price-approvals-unit-cell input,
+    #price-approvals-table-wrap .price-approvals-total-price-cell input,
+    #price-approvals-table-wrap .price-approvals-quantity-cell input,
+    #price-approvals-table-wrap .price-approvals-unit-price-cell input,
+    #price-approvals-table-wrap .price-approvals-embed-text-cell textarea {
+      min-width: 0;
+    }
+    #price-approvals-table-wrap input[type="text"],
+    #price-approvals-table-wrap input[type="number"],
+    #price-approvals-table-wrap textarea {
+      width: 100%;
+      min-width: 4rem;
+      box-sizing: border-box;
+    }
+    #price-approvals-table-wrap .price-approvals-id-cell {
+      color: #aaa;
+      white-space: nowrap;
+      width: 2.25rem;
+      max-width: 2.25rem;
+      text-align: center;
+    }
+    #price-approvals-table-wrap .price-approvals-embed-text-cell textarea {
+      resize: vertical;
+    }
+    #price-approvals-table-wrap .price-approvals-approved-cell {
+      text-align: center;
+      width: 6.5rem;
+      max-width: 6.5rem;
+    }
+    #price-approvals-table-wrap .price-approvals-auto-approved-cell {
+      text-align: center;
+      width: 8.5rem;
+      max-width: 8.5rem;
+    }
     .status { padding: 0.6rem 0.8rem; margin: 0.5rem 0; border-radius: 4px; }
     .status-loading { background: #1a2a44; color: #7eb8ff; }
     .status-success { background: #1a2e1a; color: #81c784; }
@@ -110,48 +379,279 @@
       .top-bar { flex-direction: column; align-items: stretch; }
       .top-bar-nav { width: 100%; }
       .tab-button { flex: 1 1 auto; text-align: center; }
+      .settings-fields-grid { grid-template-columns: 1fr; }
+      .settings-models-layout { grid-template-columns: 1fr; row-gap: 1.75rem; }
     }
     .data-analysis-section { display: none; margin-bottom: 1.5rem; }
     .data-analysis-block { display: none; margin-bottom: 1rem; }
     .validation-section { display: none; margin-bottom: 1.5rem; }
+    .scroll-table-wrap { max-height: 420px; overflow: auto; margin-bottom: 1rem; }
+    .price-approvals-pagination {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+      width: 100%;
+    }
+    #panel-price-approvals {
+      width: 100%;
+    }
+    #panel-price-approvals .price-approvals-toolbar,
+    #price-approvals-message {
+      width: 100%;
+    }
+    .settings-field { margin-bottom: 0; }
+    .settings-field label { display: block; margin: 0 0 0.25rem; font-weight: 600; }
+    .settings-hint { margin: 0 0 0.5rem; font-size: 0.85rem; color: #888; line-height: 1.4; }
+    .settings-field input[type="text"],
+    .settings-field input[type="number"],
+    .settings-field select {
+      width: 100%;
+      max-width: none;
+      display: block;
+      background: #111;
+      color: #e8e8e8;
+      border: 1px solid #444;
+      padding: 0.3rem 0.5rem;
+      box-sizing: border-box;
+    }
+    .settings-fields-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      column-gap: 4rem;
+      row-gap: 1.75rem;
+    }
+    .settings-models-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      column-gap: 4rem;
+      align-items: start;
+    }
+    .settings-models-column {
+      display: grid;
+      row-gap: 1.75rem;
+    }
+    .settings-section { margin-bottom: 1.5rem; }
+    .settings-section h2 { margin: 0 0 0.75rem; font-size: 1rem; color: #7eb8ff; }
+    .settings-toolbar {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.75rem 1rem;
+      padding: 0.75rem 0 1rem;
+      margin-bottom: 0.5rem;
+      background: #000;
+      border-bottom: 1px solid #333;
+    }
+    .settings-toolbar #settings-message {
+      flex: 1 1 12rem;
+      min-height: 1.5rem;
+      margin: 0;
+    }
+    .about-page {
+      max-width: 42rem;
+      margin: 0 auto;
+    }
+    .about-hero {
+      margin-bottom: 2rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 1px solid #333;
+    }
+    .about-hero h2 {
+      margin: 0 0 0.75rem;
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: #fff;
+    }
+    .about-hero p {
+      margin: 0;
+      color: #aaa;
+      line-height: 1.6;
+    }
+    .about-section {
+      margin-bottom: 2rem;
+    }
+    .about-section h3 {
+      margin: 0 0 1rem;
+      font-size: 1rem;
+      font-weight: 600;
+      color: #7eb8ff;
+    }
+    .about-steps {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      gap: 1rem;
+    }
+    .about-step {
+      padding: 1rem 1rem 1rem 3.25rem;
+      background: #111;
+      border: 1px solid #333;
+      border-radius: 6px;
+      position: relative;
+    }
+    .about-step-number {
+      position: absolute;
+      left: 1rem;
+      top: 1rem;
+      width: 1.5rem;
+      height: 1.5rem;
+      border-radius: 50%;
+      background: #1a2a44;
+      color: #7eb8ff;
+      font-size: 0.8rem;
+      font-weight: 600;
+      line-height: 1.5rem;
+      text-align: center;
+    }
+    .about-step-title {
+      display: block;
+      margin-bottom: 0.35rem;
+      font-weight: 600;
+      color: #fff;
+    }
+    .about-step-text {
+      display: block;
+      color: #aaa;
+      line-height: 1.5;
+      font-size: 0.95rem;
+    }
+    .about-prices-list {
+      margin: 0;
+      padding-left: 1.25rem;
+      color: #aaa;
+      line-height: 1.6;
+    }
+    .about-prices-list li {
+      margin-bottom: 0.65rem;
+    }
+    .about-prices-list li:last-child {
+      margin-bottom: 0;
+    }
+    @media (max-width: 540px) {
+      .comparison-step-cards {
+        grid-template-columns: 1fr;
+      }
+      .comparison-hero-split {
+        grid-template-columns: 1fr;
+        gap: 1.25rem;
+      }
+    }
   </style>
 </head>
 <body>
   <header class="top-bar">
-    <h1 class="top-bar-title">Troskovnik comparison</h1>
+    <h1 class="top-bar-title">Bill of Quantities Analyzer</h1>
     <nav class="top-bar-nav">
-      <button class="tab-button active" id="tab-button-comparison">Comparison</button>
+      <button class="tab-button active" id="tab-button-comparison">Data Management</button>
       <button class="tab-button" id="tab-button-data-analysis">Data Analysis</button>
-      <button class="tab-button" id="tab-button-validation">Validation</button>
+      <button class="tab-button" id="tab-button-price-approvals">Price Approvals</button>
+      <button class="tab-button" id="tab-button-settings">Settings</button>
+      <button class="tab-button" id="tab-button-about">About</button>
     </nav>
   </header>
 
   <main class="page-content">
+  <div class="tab-panel" id="panel-about">
+    <div class="about-page">
+      <section class="about-hero">
+        <h2>Compare bills of quantities in one file</h2>
+        <p>Upload several Excel files, then export one CSV with the same work from each offer on one row.</p>
+      </section>
+      <section class="about-section">
+        <h3>How it works</h3>
+        <ol class="about-steps">
+          <li class="about-step">
+            <span class="about-step-number">1</span>
+            <span class="about-step-title">Upload</span>
+            <span class="about-step-text">Upload Excel troškovnici for a trade (e.g. piping). The app detects relevant sheets, parses each line, and saves it. Nothing is merged at upload.</span>
+          </li>
+          <li class="about-step">
+            <span class="about-step-number">2</span>
+            <span class="about-step-title">Price</span>
+            <span class="about-step-text">Prices from Excel are kept. Missing prices can be suggested from the web. You review and approve each line on the Price Approvals tab.</span>
+          </li>
+          <li class="about-step">
+            <span class="about-step-number">3</span>
+            <span class="about-step-title">Export</span>
+            <span class="about-step-text">When you download the comparison CSV, the app merges similar lines from different files into one row (similarity threshold in Settings). Piping and electro never mix.</span>
+          </li>
+          <li class="about-step">
+            <span class="about-step-number">4</span>
+            <span class="about-step-title">CSV</span>
+            <span class="about-step-text">One row per matched item, columns per offer (unit, quantity, prices). The merged column is True when two or more offers share that row. Combined descriptions are joined with ||. Only approved prices are exported.</span>
+          </li>
+        </ol>
+      </section>
+    </div>
+  </div>
+
   <div class="tab-panel active" id="panel-comparison">
-    <div class="comparison-center">
-      <p class="comparison-intro">
-        Upload Excel troskovnici for a component. The app detects the relevant sheets,
-        parses line items, matches them across offers with cosine similarity, and stores them for comparison.
-        Download the CSV when you are ready to compare all loaded offers side by side.
-      </p>
-      <div class="comparison-upload-block">
-        <p>
-          <label>Component
-            <select id="component">
-              <option value="piping" selected>Piping</option>
-              <option value="electro">Electro</option>
-            </select>
-          </label>
-        </p>
-        <p>
-          <label>Excel file <input type="file" id="file" accept=".xls,.xlsx"></label>
-        </p>
-        <p class="comparison-actions">
-          <button id="upload">Upload</button>
-          <button id="download">Download comparison CSV</button>
-        </p>
+    <div class="comparison-landing">
+      <div class="comparison-step-cards">
+        <button type="button" class="comparison-step-card" id="comparison-step-export">
+          <span class="comparison-step-card-number">Export</span>
+          <span class="comparison-step-card-title">CSV compare</span>
+          <span class="comparison-step-card-text">Merge similar lines and download the comparison CSV.</span>
+        </button>
+        <button type="button" class="comparison-step-card" id="comparison-step-approve">
+          <span class="comparison-step-card-number">Approve</span>
+          <span class="comparison-step-card-title">Price Approvals</span>
+          <span class="comparison-step-card-text">Review imputed prices and approve or edit rows.</span>
+        </button>
+        <button type="button" class="comparison-step-card" id="comparison-step-settings">
+          <span class="comparison-step-card-number">Settings</span>
+          <span class="comparison-step-card-title">Configuration</span>
+          <span class="comparison-step-card-text">Similarity threshold and other export options.</span>
+        </button>
       </div>
-      <div id="message"></div>
+      <div id="comparison-export-message"></div>
+      <button id="download" type="button" hidden>Download comparison CSV</button>
+      <section class="comparison-hero">
+        <h2>Upload bill of quantities</h2>
+        <div class="comparison-hero-split">
+          <div class="comparison-hero-left">
+            <div class="comparison-upload-block">
+              <p>
+                <label>Component
+                  <select id="component">
+                    <option value="piping" selected>Piping</option>
+                    <option value="electro">Electro</option>
+                  </select>
+                </label>
+              </p>
+              <p>
+                <label>Excel file <input type="file" id="file" accept=".xls,.xlsx"></label>
+              </p>
+              <p class="comparison-actions">
+                <button id="upload" type="button">Upload</button>
+              </p>
+            </div>
+            <div id="message"></div>
+          </div>
+          <div class="comparison-hero-right">
+            <p class="comparison-intro">
+              Select a category and upload your Excel troškovnici. The app detects relevant sheets,
+              saves each line, and suggests prices where Excel has none. Nothing is merged at upload.
+              Use Export above to merge similar lines from all uploaded files into one CSV.
+              Adjust how strict matching is under Settings. Only approved prices are written to the export.
+            </p>
+          </div>
+        </div>
+      </section>
+      <section class="comparison-uploads-card">
+        <div class="comparison-uploads-card-header">
+          <h2>Uploaded bills of quantities</h2>
+        </div>
+        <div id="comparison-uploads-list" class="comparison-uploads-list"></div>
+        <p id="comparison-uploads-empty" class="comparison-uploads-empty" hidden>No bills uploaded yet for this component.</p>
+      </section>
     </div>
   </div>
 
@@ -204,21 +704,92 @@
     </section>
   </div>
 
-  <div class="tab-panel" id="panel-validation">
-    <p>
-      <button id="run-validation">Run validation</button>
-    </p>
-    <div id="validation-message"></div>
+  <div class="tab-panel" id="panel-price-approvals">
+    <div class="price-approvals-toolbar">
+      <div class="price-approvals-toolbar-actions">
+        <button id="price-approvals-approve-selected">Approve selected</button>
+        <button id="price-approvals-disapprove-selected">Disapprove selected</button>
+      </div>
+      <div class="price-approvals-toolbar-filter">
+        <label>Filter
+          <input type="search" id="price-approvals-search" placeholder="Search items...">
+        </label>
+      </div>
+    </div>
+    <div id="price-approvals-message"></div>
+    <div class="scroll-table-wrap" id="price-approvals-table-wrap"></div>
+    <div id="price-approvals-pagination" class="price-approvals-pagination"></div>
+  </div>
 
-    <section id="validation-section-summary" class="validation-section">
-      <h2>Summary</h2>
-      <pre id="validation-summary"></pre>
-    </section>
-
-    <section id="validation-section-charts" class="validation-section">
-      <h2>Charts</h2>
-      <div id="validation-chart"></div>
-    </section>
+  <div class="tab-panel" id="panel-settings">
+    <form class="settings-form" id="settings-form">
+      <div class="settings-toolbar">
+        <button type="submit" id="save-settings">Save settings</button>
+        <div id="settings-message"></div>
+      </div>
+      <section class="settings-section">
+        <h2>Models</h2>
+        <div class="settings-models-layout">
+        <div class="settings-models-column">
+        <div class="settings-field">
+          <label for="settings-embedding-model">Embedding model</label>
+          <p class="settings-hint">Embedding model for sheet names and item descriptions.</p>
+          <select id="settings-embedding-model" required></select>
+        </div>
+        <div class="settings-field">
+          <label for="settings-price-imputation-model">Price imputation model</label>
+          <p class="settings-hint">Model for item price search on the internet.</p>
+          <select id="settings-price-imputation-model" required></select>
+        </div>
+        </div>
+        <div class="settings-field">
+          <label for="settings-preferred-websites">Preferred websites</label>
+          <p class="settings-hint">Comma-separated URLs searched first for suggesting missing item prices.</p>
+          <input type="text" id="settings-preferred-websites" required>
+        </div>
+        </div>
+      </section>
+      <section class="settings-section">
+        <h2>Ingestion</h2>
+        <div class="settings-fields-grid">
+        <div class="settings-field">
+          <label for="settings-sheet-similarity-threshold">Sheet similarity threshold</label>
+          <p class="settings-hint">Fallback for sheet detection. If name rules fail, keep sheets whose name matches the user's dropdown selection in the File Upload tab at least this well. Scale 0-1.</p>
+          <input type="number" id="settings-sheet-similarity-threshold" min="0" max="1" step="0.01" required>
+        </div>
+        <div class="settings-field">
+          <label for="settings-item-similarity-pricing">Item similarity for pricing</label>
+          <p class="settings-hint">Minimum item similarity to a similar approved DB item when deciding auto-approve after internet imputation. Does not fetch or set the price.</p>
+          <input type="number" id="settings-item-similarity-pricing" min="0" max="1" step="0.01" required>
+        </div>
+        <div class="settings-field">
+          <label for="settings-pricing-similarity-threshold">Pricing similarity threshold (±% for auto-approve)</label>
+          <p class="settings-hint">Auto-approve internet-imputed price only if it is within this ±% of a similar approved item's price. Not item similarity.</p>
+          <input type="number" id="settings-pricing-similarity-threshold" min="1" max="100" step="1" required>
+        </div>
+        <div class="settings-field">
+          <label for="settings-auto-approve-prices">Auto-approve prices</label>
+          <p class="settings-hint">On ingest, missing Excel prices are fetched from the internet (price imputation client, not item embedding). Auto-approve applies only when a similar approved item exists and ±% range passes. Excel prices are ingested as approved.</p>
+          <input type="checkbox" id="settings-auto-approve-prices">
+        </div>
+        </div>
+      </section>
+      <section class="settings-section">
+        <h2>Export</h2>
+        <div class="settings-fields-grid">
+        <div class="settings-field">
+          <label for="settings-similarity-threshold">Item similarity for export</label>
+          <p class="settings-hint">Minimum item similarity to merge items from different offers into one comparison line (0-1).</p>
+          <input type="number" id="settings-similarity-threshold" min="0" max="1" step="0.01" required>
+        </div>
+        <div class="settings-field">
+          <label for="settings-price-approvals-page-size">Price Approvals rows per page</label>
+          <p class="settings-hint">Number of items shown on each page of the Price Approvals table.</p>
+          <input type="number" id="settings-price-approvals-page-size" min="1" step="1" required>
+        </div>
+        </div>
+      </section>
+    </form>
   </div>
   </main>
 
@@ -227,12 +798,55 @@
     const componentInput = document.getElementById("component");
     const fileInput = document.getElementById("file");
     const message = document.getElementById("message");
+    const comparisonExportMessage = document.getElementById("comparison-export-message");
+    const comparisonUploadsList = document.getElementById("comparison-uploads-list");
+    const comparisonUploadsEmpty = document.getElementById("comparison-uploads-empty");
     const dataAnalysisMessage = document.getElementById("data-analysis-message");
-    const validationMessage = document.getElementById("validation-message");
+    const priceApprovalsMessage = document.getElementById("price-approvals-message");
+    const settingsMessage = document.getElementById("settings-message");
     const uploadButton = document.getElementById("upload");
     const downloadButton = document.getElementById("download");
     const runDataAnalysisButton = document.getElementById("run-data-analysis");
-    const runValidationButton = document.getElementById("run-validation");
+    const priceApprovalsApproveSelectedButton = document.getElementById("price-approvals-approve-selected");
+    const priceApprovalsDisapproveSelectedButton = document.getElementById("price-approvals-disapprove-selected");
+    const priceApprovalsSearchInput = document.getElementById("price-approvals-search");
+    const settingsForm = document.getElementById("settings-form");
+    let priceApprovalRows = [];
+    let selectedOfferItemIds = new Set();
+    let visiblePriceApprovalRows = [];
+    let priceApprovalsPage = 1;
+    let priceApprovalsPageSize;
+
+    function applyAppSettingsToForm(data) {
+      fillEmbeddingModelSelect(
+        document.getElementById("settings-embedding-model"),
+        data.embedding_model_options,
+        data.embedding_model
+      );
+      fillEmbeddingModelSelect(
+        document.getElementById("settings-price-imputation-model"),
+        data.price_imputation_model_options,
+        data.price_imputation_model
+      );
+      document.getElementById("settings-preferred-websites").value = data.preferred_websites;
+      document.getElementById("settings-similarity-threshold").value = data.similarity_threshold;
+      document.getElementById("settings-item-similarity-pricing").value = data.item_similarity_threshold_pricing;
+      document.getElementById("settings-pricing-similarity-threshold").value = data.pricing_similarity_threshold;
+      document.getElementById("settings-sheet-similarity-threshold").value = data.sheet_similarity_threshold;
+      document.getElementById("settings-auto-approve-prices").checked = data.auto_approve_prices;
+      document.getElementById("settings-price-approvals-page-size").value = data.price_approvals_page_size;
+      priceApprovalsPageSize = data.price_approvals_page_size;
+    }
+
+    async function fetchAppSettings() {
+      const response = await fetch("/settings");
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(formatErrorDetail(data));
+      }
+      applyAppSettingsToForm(data);
+      return data;
+    }
 
     function formatErrorDetail(data) {
       if (!data || !data.detail) {
@@ -274,13 +888,97 @@
       downloadButton.disabled = isDisabled;
     }
 
+    function formatUploadDate(isoString) {
+      const date = new Date(isoString);
+      if (Number.isNaN(date.getTime())) {
+        return isoString;
+      }
+      return date.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+    }
+
+    function renderUploadedOffers(offers) {
+      comparisonUploadsList.innerHTML = "";
+      const sortedOffers = offers.slice().sort(function (leftOffer, rightOffer) {
+        return new Date(rightOffer.uploaded_at) - new Date(leftOffer.uploaded_at);
+      });
+
+      if (!sortedOffers.length) {
+        comparisonUploadsEmpty.hidden = false;
+        comparisonUploadsEmpty.textContent = "No bills uploaded yet for this component.";
+        return;
+      }
+
+      comparisonUploadsEmpty.hidden = true;
+      for (const offer of sortedOffers) {
+        const itemElement = document.createElement("div");
+        itemElement.className = "comparison-upload-item";
+
+        const nameElement = document.createElement("span");
+        nameElement.className = "comparison-upload-item-name";
+        nameElement.textContent = offer.name;
+        nameElement.title = offer.name;
+
+        const dateElement = document.createElement("time");
+        dateElement.className = "comparison-upload-item-date";
+        dateElement.dateTime = offer.uploaded_at;
+        dateElement.textContent = formatUploadDate(offer.uploaded_at);
+
+        itemElement.appendChild(nameElement);
+        itemElement.appendChild(dateElement);
+        comparisonUploadsList.appendChild(itemElement);
+      }
+    }
+
+    async function loadUploadedOffers() {
+      const component = componentInput.value.trim();
+      try {
+        const response = await fetch("/offers?component=" + encodeURIComponent(component));
+        const data = await response.json();
+        if (!response.ok) {
+          comparisonUploadsList.innerHTML = "";
+          comparisonUploadsEmpty.hidden = false;
+          comparisonUploadsEmpty.textContent = formatErrorDetail(data);
+          return;
+        }
+        renderUploadedOffers(data);
+      } catch (error) {
+        comparisonUploadsList.innerHTML = "";
+        comparisonUploadsEmpty.hidden = false;
+        comparisonUploadsEmpty.textContent = "Could not load uploaded bills.";
+      }
+    }
+
+    const appTabNames = ["about", "comparison", "data-analysis", "price-approvals", "settings"];
+
+    function getTabNameFromLocationHash() {
+      const hashTabName = window.location.hash.slice(1);
+      if (appTabNames.includes(hashTabName)) {
+        return hashTabName;
+      }
+      return "comparison";
+    }
+
     function showTab(tabName) {
-      document.getElementById("panel-comparison").classList.toggle("active", tabName === "comparison");
-      document.getElementById("panel-data-analysis").classList.toggle("active", tabName === "data-analysis");
-      document.getElementById("panel-validation").classList.toggle("active", tabName === "validation");
-      document.getElementById("tab-button-comparison").classList.toggle("active", tabName === "comparison");
-      document.getElementById("tab-button-data-analysis").classList.toggle("active", tabName === "data-analysis");
-      document.getElementById("tab-button-validation").classList.toggle("active", tabName === "validation");
+      if (!appTabNames.includes(tabName)) {
+        tabName = "comparison";
+      }
+      for (const name of appTabNames) {
+        document.getElementById("panel-" + name).classList.toggle("active", tabName === name);
+        document.getElementById("tab-button-" + name).classList.toggle("active", tabName === name);
+      }
+      if (tabName === "price-approvals") {
+        loadPriceApprovals();
+      }
+      if (tabName === "settings") {
+        loadSettings();
+      }
+      if (tabName === "comparison") {
+        loadUploadedOffers();
+      }
+      const expectedHash = "#" + tabName;
+      if (window.location.hash !== expectedHash) {
+        history.replaceState(null, "", expectedHash);
+      }
     }
 
     function setDataAnalysisBlockVisible(blockId, isVisible) {
@@ -514,16 +1212,392 @@
       });
     }
 
-    function resetValidationSections() {
-      document.querySelectorAll(".validation-section").forEach(function (sectionElement) {
-        sectionElement.style.display = "none";
-      });
-      document.getElementById("validation-summary").textContent = "";
-      document.getElementById("validation-chart").innerHTML = "";
+    function fillEmbeddingModelSelect(selectElement, modelOptions, selectedModel) {
+      selectElement.innerHTML = "";
+      for (const modelName of modelOptions) {
+        const option = document.createElement("option");
+        option.value = modelName;
+        option.textContent = modelName;
+        selectElement.appendChild(option);
+      }
+      selectElement.value = modelOptions.includes(selectedModel) ? selectedModel : modelOptions[0];
     }
 
-    function setValidationSectionVisible(sectionId, isVisible) {
-      document.getElementById(sectionId).style.display = isVisible ? "block" : "none";
+    async function loadSettings() {
+      setStatus(settingsMessage, "loading", "Loading settings...");
+      try {
+        await fetchAppSettings();
+        setStatus(settingsMessage, "success", "Settings loaded.");
+      } catch (error) {
+        setStatus(settingsMessage, "error", error.message);
+      }
+    }
+
+    async function saveSettings(event) {
+      event.preventDefault();
+      setStatus(settingsMessage, "loading", "Saving settings...");
+      const payload = {
+        embedding_model: document.getElementById("settings-embedding-model").value,
+        price_imputation_model: document.getElementById("settings-price-imputation-model").value,
+        preferred_websites: document.getElementById("settings-preferred-websites").value,
+        similarity_threshold: parseFloat(document.getElementById("settings-similarity-threshold").value),
+        item_similarity_threshold_pricing: parseFloat(document.getElementById("settings-item-similarity-pricing").value),
+        pricing_similarity_threshold: parseInt(document.getElementById("settings-pricing-similarity-threshold").value, 10),
+        sheet_similarity_threshold: parseFloat(document.getElementById("settings-sheet-similarity-threshold").value),
+        auto_approve_prices: document.getElementById("settings-auto-approve-prices").checked,
+        price_approvals_page_size: parseInt(
+          document.getElementById("settings-price-approvals-page-size").value,
+          10
+        ),
+      };
+      const response = await fetch("/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        setStatus(settingsMessage, "error", formatErrorDetail(data));
+        return;
+      }
+      priceApprovalsPageSize = data.price_approvals_page_size;
+      priceApprovalsPage = 1;
+      if (document.getElementById("panel-price-approvals").classList.contains("active")) {
+        renderPriceApprovalsTable();
+      }
+      setStatus(settingsMessage, "success", "Settings saved.");
+    }
+
+    function getFilteredPriceApprovalRows() {
+      return filterPriceApprovalRows(priceApprovalRows, priceApprovalsSearchInput.value);
+    }
+
+    function renderPriceApprovalsPagination(totalRows, totalPages) {
+      const paginationElement = document.getElementById("price-approvals-pagination");
+      paginationElement.innerHTML = "";
+      if (!totalRows) {
+        return;
+      }
+
+      const previousButton = document.createElement("button");
+      previousButton.textContent = "Previous";
+      previousButton.disabled = priceApprovalsPage <= 1;
+      previousButton.onclick = function () {
+        priceApprovalsPage -= 1;
+        renderPriceApprovalsTable();
+      };
+
+      const pageInfo = document.createElement("span");
+      pageInfo.textContent = "Page " + priceApprovalsPage + " of " + totalPages;
+
+      const nextButton = document.createElement("button");
+      nextButton.textContent = "Next";
+      nextButton.disabled = priceApprovalsPage >= totalPages;
+      nextButton.onclick = function () {
+        priceApprovalsPage += 1;
+        renderPriceApprovalsTable();
+      };
+
+      paginationElement.appendChild(previousButton);
+      paginationElement.appendChild(pageInfo);
+      paginationElement.appendChild(nextButton);
+    }
+
+    function renderPriceApprovalsTable() {
+      const filteredRows = getFilteredPriceApprovalRows();
+      const totalPages = Math.max(1, Math.ceil(filteredRows.length / priceApprovalsPageSize));
+      if (priceApprovalsPage > totalPages) {
+        priceApprovalsPage = totalPages;
+      }
+      const startIndex = (priceApprovalsPage - 1) * priceApprovalsPageSize;
+      const rows = filteredRows.slice(startIndex, startIndex + priceApprovalsPageSize);
+      visiblePriceApprovalRows = rows;
+      const container = document.getElementById("price-approvals-table-wrap");
+      container.innerHTML = "";
+      if (!filteredRows.length) {
+        container.textContent = "No items.";
+        renderPriceApprovalsPagination(0, 1);
+        return;
+      }
+
+      const table = document.createElement("table");
+      const headerRow = document.createElement("tr");
+
+      const selectAllHeaderCell = document.createElement("th");
+      const selectAllCheckbox = document.createElement("input");
+      selectAllCheckbox.type = "checkbox";
+      selectAllCheckbox.checked = rows.every(function (row) {
+        return selectedOfferItemIds.has(row.offer_item_id);
+      });
+      selectAllCheckbox.onchange = function () {
+        for (const row of rows) {
+          if (selectAllCheckbox.checked) {
+            selectedOfferItemIds.add(row.offer_item_id);
+          } else {
+            selectedOfferItemIds.delete(row.offer_item_id);
+          }
+        }
+        renderPriceApprovalsTable();
+      };
+      selectAllHeaderCell.appendChild(selectAllCheckbox);
+      headerRow.appendChild(selectAllHeaderCell);
+
+      const columnDefinitions = [
+        { name: "offer_name", label: "offer", inputType: "text", cellClassName: "price-approvals-offer-cell" },
+        { name: "embed_text", label: "item", inputType: "textarea", rows: 4, cellClassName: "price-approvals-embed-text-cell" },
+        { name: "unit", label: "unit", inputType: "text", cellClassName: "price-approvals-unit-cell" },
+        { name: "quantity", label: "quantity", inputType: "number", cellClassName: "price-approvals-quantity-cell" },
+        { name: "unit_price", label: "unit price", inputType: "number", cellClassName: "price-approvals-unit-price-cell" },
+        { name: "total_price", label: "total price", inputType: "number", cellClassName: "price-approvals-total-price-cell" },
+        { name: "approved", label: "approved", inputType: "checkbox", cellClassName: "price-approvals-approved-cell" },
+        { name: "auto_approved", label: "auto approved", inputType: "checkbox", readOnly: true, cellClassName: "price-approvals-auto-approved-cell" },
+      ];
+
+      const ordinalHeaderCell = document.createElement("th");
+      ordinalHeaderCell.textContent = "#";
+      ordinalHeaderCell.className = "price-approvals-id-cell";
+      headerRow.appendChild(ordinalHeaderCell);
+
+      for (const columnDefinition of columnDefinitions) {
+        const headerCell = document.createElement("th");
+        headerCell.textContent = columnDefinition.label;
+        if (columnDefinition.cellClassName) {
+          headerCell.className = columnDefinition.cellClassName;
+        }
+        headerRow.appendChild(headerCell);
+      }
+      const actionHeaderCell = document.createElement("th");
+      actionHeaderCell.textContent = "action";
+      actionHeaderCell.className = "price-approvals-action-cell";
+      headerRow.appendChild(actionHeaderCell);
+      table.appendChild(headerRow);
+
+      for (let rowIndex = 0; rowIndex < rows.length; rowIndex++) {
+        const row = rows[rowIndex];
+        const tableRow = document.createElement("tr");
+
+        const selectCell = document.createElement("td");
+        const rowCheckbox = document.createElement("input");
+        rowCheckbox.type = "checkbox";
+        rowCheckbox.checked = selectedOfferItemIds.has(row.offer_item_id);
+        rowCheckbox.onchange = function () {
+          if (rowCheckbox.checked) {
+            selectedOfferItemIds.add(row.offer_item_id);
+          } else {
+            selectedOfferItemIds.delete(row.offer_item_id);
+          }
+          renderPriceApprovalsTable();
+        };
+        selectCell.appendChild(rowCheckbox);
+        tableRow.appendChild(selectCell);
+
+        const ordinalCell = document.createElement("td");
+        ordinalCell.className = "price-approvals-id-cell";
+        ordinalCell.textContent = String(startIndex + rowIndex + 1);
+        tableRow.appendChild(ordinalCell);
+
+        for (const columnDefinition of columnDefinitions) {
+          const tableCell = document.createElement("td");
+          if (columnDefinition.cellClassName) {
+            tableCell.className = columnDefinition.cellClassName;
+          }
+          if (columnDefinition.inputType === "checkbox") {
+            const approvedCheckbox = document.createElement("input");
+            approvedCheckbox.type = "checkbox";
+            approvedCheckbox.checked = row[columnDefinition.name];
+            if (columnDefinition.readOnly) {
+              approvedCheckbox.disabled = true;
+            } else {
+              approvedCheckbox.dataset.field = columnDefinition.name;
+            }
+            tableCell.appendChild(approvedCheckbox);
+          } else if (columnDefinition.inputType === "textarea") {
+            const fieldInput = document.createElement("textarea");
+            fieldInput.rows = columnDefinition.rows || 4;
+            fieldInput.value = row[columnDefinition.name] ?? "";
+            fieldInput.dataset.field = columnDefinition.name;
+            tableCell.appendChild(fieldInput);
+          } else {
+            const fieldInput = document.createElement("input");
+            fieldInput.type = columnDefinition.inputType;
+            if (columnDefinition.inputType === "number") {
+              fieldInput.step = "any";
+            }
+            fieldInput.value = row[columnDefinition.name] ?? "";
+            fieldInput.dataset.field = columnDefinition.name;
+            tableCell.appendChild(fieldInput);
+          }
+          tableRow.appendChild(tableCell);
+        }
+
+        const actionCell = document.createElement("td");
+        actionCell.className = "price-approvals-action-cell";
+        const actionButtons = document.createElement("div");
+        actionButtons.className = "price-approvals-action-buttons";
+        const saveButton = document.createElement("button");
+        saveButton.textContent = "Save";
+        saveButton.onclick = () => saveOfferItemRow(tableRow, row.offer_item_id);
+        const deleteButton = document.createElement("button");
+        deleteButton.textContent = "Delete";
+        deleteButton.onclick = () => deleteOfferItem(row.offer_item_id);
+        actionButtons.appendChild(saveButton);
+        actionButtons.appendChild(deleteButton);
+        actionCell.appendChild(actionButtons);
+        tableRow.appendChild(actionCell);
+        table.appendChild(tableRow);
+      }
+      container.appendChild(table);
+      renderPriceApprovalsPagination(filteredRows.length, totalPages);
+    }
+
+    function filterPriceApprovalRows(rows, searchText) {
+      const normalizedSearch = searchText.trim().toLowerCase();
+      if (!normalizedSearch) {
+        return rows;
+      }
+      return rows.filter(function (row) {
+        return Object.values(row).some(function (value) {
+          return String(value).toLowerCase().includes(normalizedSearch);
+        });
+      });
+    }
+
+    async function loadPriceApprovals(options) {
+      const preservePage = Boolean(options && options.preservePage);
+      const savedPage = priceApprovalsPage;
+      const component = componentInput.value.trim();
+      setStatus(priceApprovalsMessage, "loading", "Loading price approvals...");
+      const response = await fetch("/price-approvals?component=" + encodeURIComponent(component));
+      const data = await response.json();
+      if (!response.ok) {
+        setStatus(priceApprovalsMessage, "error", formatErrorDetail(data));
+        return;
+      }
+      priceApprovalRows = data.rows;
+      if (preservePage) {
+        const totalPages = Math.max(1, Math.ceil(getFilteredPriceApprovalRows().length / priceApprovalsPageSize));
+        priceApprovalsPage = Math.min(savedPage, totalPages);
+      } else {
+        priceApprovalsPage = 1;
+      }
+      renderPriceApprovalsTable();
+      setStatus(priceApprovalsMessage, "success", "Loaded " + priceApprovalRows.length + " items.");
+    }
+
+    async function setOfferItemsApprovedBulk(offerItemIds, isApproved) {
+      if (!offerItemIds.length) {
+        setStatus(priceApprovalsMessage, "error", "No items selected.");
+        return;
+      }
+      const component = componentInput.value.trim();
+      const response = await fetch(
+        "/offer-items/bulk-approval?component=" + encodeURIComponent(component),
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            offer_item_ids: offerItemIds,
+            approved: isApproved,
+          }),
+        }
+      );
+      const data = await response.json();
+      if (!response.ok) {
+        setStatus(priceApprovalsMessage, "error", formatErrorDetail(data));
+        return;
+      }
+      selectedOfferItemIds = new Set();
+      await loadPriceApprovals({ preservePage: true });
+      setStatus(priceApprovalsMessage, "success", "Updated " + data.updated_count + " items.");
+    }
+
+    function readOptionalNumberInput(inputElement) {
+      const trimmedInput = inputElement.value.trim();
+      if (!trimmedInput) {
+        return null;
+      }
+      const parsedValue = Number(trimmedInput);
+      if (Number.isNaN(parsedValue)) {
+        return undefined;
+      }
+      return parsedValue;
+    }
+
+    function readOfferItemUpdatePayload(tableRow) {
+      const payload = {};
+      const fieldInputs = tableRow.querySelectorAll("[data-field]");
+      for (const fieldInput of fieldInputs) {
+        const fieldName = fieldInput.dataset.field;
+        if (fieldInput.type === "checkbox") {
+          payload[fieldName] = fieldInput.checked;
+          continue;
+        }
+        if (fieldInput.type === "number") {
+          if (fieldName === "quantity") {
+            const quantity = Number(fieldInput.value.trim());
+            payload[fieldName] = Number.isNaN(quantity) ? undefined : quantity;
+          } else {
+            payload[fieldName] = readOptionalNumberInput(fieldInput);
+          }
+          continue;
+        }
+        payload[fieldName] = fieldInput.value.trim();
+      }
+      return payload;
+    }
+
+    async function saveOfferItemRow(tableRow, offerItemId) {
+      const payload = readOfferItemUpdatePayload(tableRow);
+      if (payload.quantity === undefined) {
+        setStatus(priceApprovalsMessage, "error", "Invalid quantity.");
+        return;
+      }
+      if (payload.unit_price === undefined || payload.total_price === undefined) {
+        setStatus(priceApprovalsMessage, "error", "Invalid price value.");
+        return;
+      }
+
+      const component = componentInput.value.trim();
+      const response = await fetch(
+        "/offer-items/" + offerItemId + "?component=" + encodeURIComponent(component),
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        }
+      );
+      const data = await response.json();
+      if (!response.ok) {
+        setStatus(priceApprovalsMessage, "error", formatErrorDetail(data));
+        return;
+      }
+      const rowIndex = priceApprovalRows.findIndex(function (row) {
+        return row.offer_item_id === offerItemId;
+      });
+      if (rowIndex >= 0) {
+        priceApprovalRows[rowIndex] = data;
+      }
+      renderPriceApprovalsTable();
+      setStatus(priceApprovalsMessage, "success", "Saved item " + offerItemId + ".");
+    }
+
+    async function deleteOfferItem(offerItemId) {
+      const component = componentInput.value.trim();
+      const response = await fetch(
+        "/offer-items/" + offerItemId + "?component=" + encodeURIComponent(component),
+        { method: "DELETE" }
+      );
+      const data = await response.json();
+      if (!response.ok) {
+        setStatus(priceApprovalsMessage, "error", formatErrorDetail(data));
+        return;
+      }
+      selectedOfferItemIds.delete(offerItemId);
+      priceApprovalRows = priceApprovalRows.filter(function (row) {
+        return row.offer_item_id !== offerItemId;
+      });
+      renderPriceApprovalsTable();
+      setStatus(priceApprovalsMessage, "success", "Deleted item " + offerItemId + ".");
     }
 
     function buildQualitySummary(dataQuality) {
@@ -538,96 +1612,36 @@
       ].join("\n");
     }
 
-    function renderValidationChart(validationData) {
-      const currentMetrics = validationData.current_metrics;
-      const confusionCounts = [
-        [currentMetrics.true_positive, currentMetrics.false_negative],
-        [currentMetrics.false_positive, currentMetrics.true_negative],
-      ];
-      const confusionLabels = [
-        [String(currentMetrics.true_positive), String(currentMetrics.false_negative)],
-        [String(currentMetrics.false_positive), String(currentMetrics.true_negative)],
-      ];
-
-      Plotly.newPlot("validation-chart", [
-        {
-          z: confusionCounts,
-          x: ["Predicted same", "Predicted different"],
-          y: ["Actual same", "Actual different"],
-          type: "heatmap",
-          text: confusionLabels,
-          texttemplate: "%{text}",
-          textfont: { size: 18, color: "#111" },
-          xaxis: "x",
-          yaxis: "y",
-          colorscale: [[0, "#f5f9ff"], [1, "#1a4fb0"]],
-          showscale: false,
-        },
-        {
-          x: validationData.chart_data.same_item_similarities,
-          type: "histogram",
-          name: "same item pairs",
-          opacity: 0.65,
-          xbins: { size: 0.05 },
-          xaxis: "x2",
-          yaxis: "y2",
-        },
-        {
-          x: validationData.chart_data.different_item_similarities,
-          type: "histogram",
-          name: "different item pairs",
-          opacity: 0.65,
-          xbins: { size: 0.05 },
-          xaxis: "x2",
-          yaxis: "y2",
-        },
-      ], {
-        title: "Validation at threshold " + validationData.current_threshold,
-        grid: { rows: 2, columns: 1, pattern: "independent", roworder: "top to bottom" },
-        xaxis: { anchor: "y" },
-        yaxis: { anchor: "x", autorange: "reversed" },
-        xaxis2: { title: "Pair cosine similarity", range: [0, 1], anchor: "y2" },
-        yaxis2: { title: "Pair count", anchor: "x2" },
-        barmode: "overlay",
-        shapes: [{
-          type: "line",
-          x0: validationData.current_threshold,
-          x1: validationData.current_threshold,
-          xref: "x2",
-          yref: "y2 domain",
-          y0: 0,
-          y1: 1,
-          line: { dash: "dash", color: "#333", width: 2 },
-        }],
-      });
-    }
-
-    function buildValidationSummary(validationData) {
-      const currentMetrics = validationData.current_metrics;
-      const recommendedMetrics = validationData.recommended_metrics;
-      return [
-        "Validation summary",
-        "- Labeled pairs: " + validationData.labeled_pair_count +
-          " (same item: " + validationData.same_item_count +
-          ", different: " + validationData.negative_pair_count + ")",
-        "- Confusion matrix at threshold " + validationData.current_threshold + ":",
-        "    TP (correct merge) = " + currentMetrics.true_positive +
-          ", FP (wrong merge) = " + currentMetrics.false_positive,
-        "    FN (missed match) = " + currentMetrics.false_negative +
-          ", TN (correctly kept separate) = " + currentMetrics.true_negative,
-        "- Precision = " + currentMetrics.precision + ", recall = " + currentMetrics.recall +
-          ", f1 = " + currentMetrics.f1,
-        "- Recommended threshold: " + validationData.recommended_threshold +
-          " (f1 = " + recommendedMetrics.f1 + ")",
-        "- Upload more offers for richer validation (only " + validationData.same_item_count +
-          " same-item pairs auto-labeled so far)",
-        "- Set SIMILARITY_THRESHOLD in .env to change matching",
-      ].join("\n");
-    }
-
+    document.getElementById("tab-button-about").onclick = () => showTab("about");
     document.getElementById("tab-button-comparison").onclick = () => showTab("comparison");
     document.getElementById("tab-button-data-analysis").onclick = () => showTab("data-analysis");
-    document.getElementById("tab-button-validation").onclick = () => showTab("validation");
+    document.getElementById("tab-button-price-approvals").onclick = () => showTab("price-approvals");
+    document.getElementById("tab-button-settings").onclick = () => showTab("settings");
+    priceApprovalsApproveSelectedButton.onclick = function () {
+      setOfferItemsApprovedBulk(Array.from(selectedOfferItemIds), true);
+    };
+    priceApprovalsDisapproveSelectedButton.onclick = function () {
+      setOfferItemsApprovedBulk(Array.from(selectedOfferItemIds), false);
+    };
+    priceApprovalsSearchInput.oninput = function () {
+      priceApprovalsPage = 1;
+      renderPriceApprovalsTable();
+    };
+    settingsForm.onsubmit = saveSettings;
+
+    componentInput.onchange = function () {
+      loadUploadedOffers();
+    };
+
+    document.getElementById("comparison-step-export").onclick = function () {
+      downloadButton.click();
+    };
+    document.getElementById("comparison-step-approve").onclick = function () {
+      showTab("price-approvals");
+    };
+    document.getElementById("comparison-step-settings").onclick = function () {
+      showTab("settings");
+    };
 
     uploadButton.onclick = async () => {
       const file = fileInput.files[0];
@@ -669,6 +1683,7 @@
           "Added " + data.offer_name + " — " + data.item_count + " items from sheets: " + sheetList + "."
         );
         fileInput.value = "";
+        loadUploadedOffers();
       } catch (error) {
         setStatus(message, "error", "Cannot reach the server. Start it with: PYTHONPATH=src uvicorn main:app --reload");
       } finally {
@@ -679,14 +1694,14 @@
     downloadButton.onclick = async () => {
       const component = componentInput.value.trim();
       setComparisonButtonsDisabled(true);
-      setStatus(message, "loading", "Preparing comparison CSV...");
+      setStatus(comparisonExportMessage, "loading", "Preparing comparison CSV...");
 
       try {
         const response = await fetch("/summary?component=" + encodeURIComponent(component));
 
         if (!response.ok) {
           const data = await response.json();
-          setStatus(message, "error", formatErrorDetail(data));
+          setStatus(comparisonExportMessage, "error", formatErrorDetail(data));
           return;
         }
 
@@ -696,9 +1711,9 @@
         downloadLink.download = getDownloadFilename(response, "troskovnik.csv");
         downloadLink.click();
         URL.revokeObjectURL(downloadLink.href);
-        setStatus(message, "success", "Comparison CSV downloaded.");
+        setStatus(comparisonExportMessage, "success", "Comparison CSV downloaded.");
       } catch (error) {
-        setStatus(message, "error", "Download failed.");
+        setStatus(comparisonExportMessage, "error", "Download failed.");
       } finally {
         setComparisonButtonsDisabled(false);
       }
@@ -728,32 +1743,12 @@
       }
     };
 
-    runValidationButton.onclick = async () => {
-      const component = componentInput.value.trim();
-      runValidationButton.disabled = true;
-      resetValidationSections();
-      setStatus(validationMessage, "loading", "Running threshold validation...");
-
-      try {
-        const response = await fetch("/validation?component=" + encodeURIComponent(component));
-        const data = await response.json();
-
-        if (!response.ok) {
-          setStatus(validationMessage, "error", formatErrorDetail(data));
-          return;
-        }
-
-        setStatus(validationMessage, "success", "Validated " + data.labeled_pair_count + " pairs.");
-        document.getElementById("validation-summary").textContent = buildValidationSummary(data);
-        setValidationSectionVisible("validation-section-summary", true);
-        renderValidationChart(data);
-        setValidationSectionVisible("validation-section-charts", true);
-      } catch (error) {
-        setStatus(validationMessage, "error", "Validation failed.");
-      } finally {
-        runValidationButton.disabled = false;
-      }
-    };
+    window.addEventListener("hashchange", function () {
+      showTab(getTabNameFromLocationHash());
+    });
+    fetchAppSettings().finally(function () {
+      showTab(getTabNameFromLocationHash());
+    });
   </script>
 </body>
 </html>

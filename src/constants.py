@@ -6,7 +6,31 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 UPLOAD_DIR = PROJECT_ROOT / "uploads"
 OUTPUT_DIR = PROJECT_ROOT / "outputs"
 FRONTEND_DIR = PROJECT_ROOT / "frontend"
-DATASET_DIR = PROJECT_ROOT / "cda_and_mlpr_project_datasets"
+
+EMBEDDING_MODEL_OPTIONS = (
+    "paraphrase-multilingual-MiniLM-L12-v2",
+    "paraphrase-multilingual-mpnet-base-v2",
+    "distiluse-base-multilingual-cased-v2",
+    "intfloat/multilingual-e5-small",
+)
+
+PRICE_IMPUTATION_MODEL_OPTIONS = (
+    "paraphrase-multilingual-MiniLM-L12-v2",
+    "paraphrase-multilingual-mpnet-base-v2",
+    "distiluse-base-multilingual-cased-v2",
+    "intfloat/multilingual-e5-small",
+)
+
+DEFAULT_PREFERRED_WEBSITES = "https://www.emajstor.hr/cijene/vodoinstalacije"
+
+PRICE_IMPUTATION_MIN_CATALOG_SIMILARITY = 0.30
+
+WEB_FETCH_TIMEOUT_SECONDS = 30
+# Some sites return 403 for bot-like User-Agent strings. A browser User-Agent avoids that.
+WEB_FETCH_USER_AGENT = (
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+    "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+)
 
 COMPONENT_LABELS = {
     "piping": [
@@ -58,13 +82,4 @@ COMPONENT_ROW_FILTER_SHEETS = {
 
 SKIP_SHEET_KEYWORDS = (
     "rekap", "nasl", "uvjet", "opć", "opc", "program", "sveukup", "ou_", "ou ", "ou.",
-)
-
-CSV_COLUMNS = (
-    "source_sheet",
-    "embed_text",
-    "unit",
-    "quantity",
-    "unit_price",
-    "total_price",
 )

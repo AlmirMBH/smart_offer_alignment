@@ -1,4 +1,5 @@
 from pathlib import Path
+from config import SHEET_SIMILARITY_THRESHOLD
 from schemas import DetectionResult, ParsedItemDict
 from utils.find_component_sheets import find_component_sheets
 from utils.load_excel import read_sheet_items
@@ -8,8 +9,13 @@ from utils.parse_items import build_embed_text, sheet_uses_component_row_filter
 def extract_offer_items_from_excel_file(
     file_path: Path | str,
     component: str,
+    sheet_similarity_threshold: float = SHEET_SIMILARITY_THRESHOLD,
 ) -> tuple[list[ParsedItemDict], DetectionResult, dict[str, list[str]]]:
-    detection = find_component_sheets(file_path, component=component)
+    detection = find_component_sheets(
+        file_path,
+        component=component,
+        sheet_similarity_threshold=sheet_similarity_threshold,
+    )
 
     if detection["status"] != "ok":
         return [], detection, {}

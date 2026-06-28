@@ -3,6 +3,7 @@ from pathlib import Path
 import pandas as pd
 from constants import OUTPUT_DIR
 from schemas import SummaryRow, TemplateRow
+from utils.sanitize_export_text import sanitize_export_cell_value, sanitize_export_text
 
 
 def offer_column_prefix(offer_name: str) -> str:
@@ -18,11 +19,14 @@ def blank_if_none(value: str | float | int | None) -> str | float | int:
 def build_summary_rows(template_rows: list[TemplateRow], offer_names: list[str]) -> list[SummaryRow]:
     summary_rows: list[SummaryRow] = []
     for template_row in template_rows:
-        row: SummaryRow = {"item": template_row["embed_text"]}
+        row: SummaryRow = {
+            "item": sanitize_export_text(template_row["embed_text"]),
+            "merged": len(template_row["offers"]) >= 2,
+        }
         for offer_name in offer_names:
             prefix = offer_column_prefix(offer_name)
             offer_data = template_row["offers"].get(offer_name, {})
-            row[f"{prefix}_unit"] = blank_if_none(offer_data.get("unit"))
+            row[f"{prefix}_unit"] = sanitize_export_cell_value(offer_data.get("unit"))
             row[f"{prefix}_qty"] = blank_if_none(offer_data.get("quantity"))
             row[f"{prefix}_unit_price"] = blank_if_none(offer_data.get("unit_price"))
             row[f"{prefix}_total"] = blank_if_none(offer_data.get("total_price"))
@@ -31,7 +35,7 @@ def build_summary_rows(template_rows: list[TemplateRow], offer_names: list[str])
 
 
 def build_total_row(summary_rows: list[SummaryRow], offer_names: list[str]) -> SummaryRow:
-    total_row: SummaryRow = {"item": "UKUPNO"}
+    total_row: SummaryRow = {"item": "UKUPNO", "merged": ""}
     for offer_name in offer_names:
         prefix = offer_column_prefix(offer_name)
         total_column = f"{prefix}_total"
@@ -57,5 +61,5 @@ def write_summary_csv(
     summary_rows = build_summary_rows(template_rows, offer_names)
     summary_rows.append(build_total_row(summary_rows, offer_names))
     output_path = build_output_path(output_dir)
-    pd.DataFrame(summary_rows).to_csv(output_path, index=False)
+    pd.DataFrame(summary_rows).to_csv(output_path, index=False, encoding="utf-8-sig")
     return output_path

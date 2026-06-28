@@ -1,7 +1,8 @@
 import os
+from pathlib import Path
 from urllib.parse import quote_plus
 from dotenv import load_dotenv
-from constants import PROJECT_ROOT
+from constants import DEFAULT_PREFERRED_WEBSITES, PROJECT_ROOT
 
 load_dotenv(PROJECT_ROOT / ".env")
 
@@ -14,13 +15,26 @@ POSTGRES_USER = os.getenv("POSTGRES_USER", "")
 POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD", "")
 
 EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "paraphrase-multilingual-MiniLM-L12-v2")
+PRICE_IMPUTATION_MODEL = os.getenv("PRICE_IMPUTATION_MODEL", "paraphrase-multilingual-MiniLM-L12-v2")
+PREFERRED_WEBSITES = os.getenv("PREFERRED_WEBSITES", DEFAULT_PREFERRED_WEBSITES)
 SIMILARITY_THRESHOLD = float(os.getenv("SIMILARITY_THRESHOLD", "0.85"))
+ITEM_SIMILARITY_THRESHOLD_PRICING = float(os.getenv("ITEM_SIMILARITY_THRESHOLD_PRICING", "0.85"))
+PRICING_SIMILARITY_THRESHOLD = int(os.getenv("PRICING_SIMILARITY_THRESHOLD", "20"))
 SHEET_SIMILARITY_THRESHOLD = float(os.getenv("SHEET_SIMILARITY_THRESHOLD", "0.75"))
+AUTO_APPROVE_PRICES = os.getenv("AUTO_APPROVE_PRICES", "false").lower() == "true"
+PRICE_APPROVALS_PAGE_SIZE = int(os.getenv("PRICE_APPROVALS_PAGE_SIZE", "6"))
+
+
+def build_sqlite_database_path() -> str:
+    sqlite_path = Path(SQLITE_DATABASE_PATH)
+    if not sqlite_path.is_absolute():
+        sqlite_path = PROJECT_ROOT / sqlite_path
+    return str(sqlite_path)
 
 
 def build_database_url() -> str:
     if DATABASE_ENGINE == "sqlite":
-        return f"sqlite:///{SQLITE_DATABASE_PATH}"
+        return f"sqlite:///{build_sqlite_database_path()}"
 
     if DATABASE_ENGINE == "postgresql":
         missing_variables = [

@@ -34,17 +34,24 @@ def upgrade():
         sa.Column("id", sa.Integer(), primary_key=True),
         sa.Column("offer_id", sa.Integer(), sa.ForeignKey("offers.id"), nullable=False),
         sa.Column("item_id", sa.Integer(), sa.ForeignKey("items.id"), nullable=False),
-        sa.Column("parent_description", sa.Text(), nullable=False),
-        sa.Column("child_description", sa.Text(), nullable=False),
         sa.Column("source_sheet", sa.String(), nullable=False),
         sa.Column("unit", sa.String(), nullable=False),
         sa.Column("quantity", sa.Float(), nullable=False),
         sa.Column("unit_price", sa.Float(), nullable=True),
         sa.Column("total_price", sa.Float(), nullable=True),
+        sa.Column("approved", sa.Boolean(), nullable=False, server_default=sa.false()),
+        sa.Column("auto_approved", sa.Boolean(), nullable=False, server_default=sa.false()),
+    )
+
+    op.create_table(
+        "app_settings",
+        sa.Column("key", sa.String(), primary_key=True),
+        sa.Column("value", sa.String(), nullable=False),
     )
 
 
 def downgrade():
+    op.drop_table("app_settings")
     op.drop_table("offer_items")
     op.drop_index("ix_items_component", "items")
     op.drop_table("items")

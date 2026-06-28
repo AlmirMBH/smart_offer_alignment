@@ -1,6 +1,7 @@
 from typing import NotRequired, TypedDict
 import numpy as np
 from numpy.typing import NDArray
+from pydantic import BaseModel, Field
 
 
 class ItemDict(TypedDict):
@@ -70,12 +71,6 @@ class OfferDict(TypedDict):
     name: str
     items: list[ItemDict]
     vectors: NDArray[np.float64]
-
-
-class FlatItemDict(TypedDict):
-    offer_name: str
-    embed_text: str
-    vector: NDArray[np.float64]
 
 
 class OfferListItem(TypedDict):
@@ -214,42 +209,70 @@ class DataAnalysisResponse(TypedDict):
     chart_data: AnalysisChartData
 
 
-class LabeledPairDict(TypedDict):
-    description_a: str
-    offer_a: str
-    description_b: str
-    offer_b: str
-    same_item: int | str
-    notes: str
+class AppSettingsValues(BaseModel):
+    embedding_model: str = Field(description="Sentence-transformers model name")
+    price_imputation_model: str = Field(description="Price imputation model name")
+    preferred_websites: str = Field(description="Comma-separated URLs to prioritize for price search")
+    similarity_threshold: float = Field(description="Item similarity for export matching")
+    item_similarity_threshold_pricing: float = Field(description="Item similarity for pricing reference")
+    pricing_similarity_threshold: int = Field(description="Price ±% for auto-approve")
+    sheet_similarity_threshold: float = Field(description="Sheet name embedding match threshold")
+    auto_approve_prices: bool = Field(description="Auto-approve imputed prices when gates pass")
+    price_approvals_page_size: int = Field(description="Rows per page on Price Approvals tab", ge=1)
 
 
-class ThresholdMetricsDict(TypedDict):
-    threshold: float
-    precision: float
-    recall: float
-    f1: float
-    accuracy: float
-    true_positive: int
-    false_positive: int
-    false_negative: int
-    true_negative: int
+class SettingsGetResponse(AppSettingsValues):
+    embedding_model_options: list[str] = Field(description="Selectable embedding model names")
+    price_imputation_model_options: list[str] = Field(description="Selectable price imputation model names")
 
 
-class ValidationChartData(TypedDict):
-    same_item_similarities: list[float]
-    different_item_similarities: list[float]
+class PriceApprovalRow(BaseModel):
+    offer_item_id: int = Field(description="offer_items.id")
+    offer_name: str = Field(description="Uploaded offer file name")
+    embed_text: str = Field(description="Item description used for embedding")
+    unit: str = Field(description="Unit of measure")
+    quantity: float = Field(description="Line quantity")
+    unit_price: float | None = Field(description="Unit price")
+    total_price: float | None = Field(description="Total price")
+    source_sheet: str = Field(description="Excel sheet name")
+    approved: bool = Field(description="Whether price is approved for export")
+    auto_approved: bool = Field(description="Whether approved was set by ingest auto-approve gates")
 
 
-class ValidationResponse(TypedDict):
-    labeled_pair_count: int
-    same_item_count: int
-    negative_pair_count: int
-    current_threshold: float
-    current_metrics: ThresholdMetricsDict
-    recommended_threshold: float
-    recommended_metrics: ThresholdMetricsDict
-    threshold_metrics: list[ThresholdMetricsDict]
-    chart_data: ValidationChartData
+class PriceApprovalsResponse(BaseModel):
+    rows: list[PriceApprovalRow] = Field(description="All offer items for the component")
+
+
+class OfferItemActionResponse(BaseModel):
+    offer_item_id: int = Field(description="offer_items.id")
+    approved: bool = Field(description="Updated approval flag")
+
+
+class BulkOfferItemsApprovalRequest(BaseModel):
+    offer_item_ids: list[int] = Field(description="offer_items.id values to update")
+    approved: bool = Field(description="Approval flag to set on all listed items")
+
+
+class BulkOfferItemsApprovalResponse(BaseModel):
+    updated_count: int = Field(description="Number of offer_items rows updated")
+
+
+class OfferItemUpdateRequest(BaseModel):
+    offer_name: str = Field(description="Uploaded offer file name")
+    embed_text: str = Field(description="Item description used for embedding")
+    unit: str = Field(description="Unit of measure")
+    quantity: float = Field(description="Line quantity")
+    unit_price: float | None = Field(description="Unit price")
+    total_price: float | None = Field(description="Total price")
+    approved: bool = Field(description="Whether price is approved for export")
+
+
+class OfferItemUpdateResponse(PriceApprovalRow):
+    pass
+
+
+class OfferItemDeleteResponse(BaseModel):
+    offer_item_id: int = Field(description="Deleted offer_items.id")
 
 
 SummaryRow = dict[str, str | float | int]

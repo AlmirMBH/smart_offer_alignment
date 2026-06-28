@@ -46,40 +46,35 @@ Datasets are provided by the course professor. They are not publicly available.
 
 ### First run behavior
 
-On startup the app creates database tables, the `uploads/` and `outputs/` folders, and loads the embedding model. The first startup downloads the model from Hugging Face (~420 MB). No API key is required. The model stays in memory for later uploads in the same session.
+On startup the app creates the `uploads/` and `outputs/` folders and loads the embedding model. The first run downloads the model from Hugging Face (~420 MB). No API key is required.
 
-### Virtual environment
+### Local setup
 
-From the project root (`smart_offer_alignment/`).
+From the project root (`smart_offer_alignment/`):
 
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-```
-
-Copy `.env.example` to `.env`. Default values are enough for a local run.
-
-### Run the web app
-
-```bash
-source .venv/bin/activate
+cp .env.example .env
+PYTHONPATH=src alembic upgrade head
 cd src && uvicorn main:app --reload
 ```
 
 Open http://127.0.0.1:8000/
 
+Run `PYTHONPATH=src alembic upgrade head` again after pulling new migrations. It uses `DATABASE_URL` from `.env` (default `./app.db`).
+
 ---
 
 ## Example Workflow
 
-1. Copy `.env.example` to `.env` and start the server.
-2. Open the Comparison tab, choose `piping` or `electro`, and upload at least two files for that component.
-3. Open the Validation tab and click **Run validation**. The summary and chart appear on the page.
-4. Set `SIMILARITY_THRESHOLD` in `.env` to the recommended value and restart the server if you change it.
-5. Re-upload offers if you changed the threshold after the first upload.
-6. Open the Comparison tab and click **Download comparison CSV**.
-7. Open the Data Analysis tab and click **Run data analysis** to inspect structure, quality, and comparability.
+After setup above:
+
+1. Open the Comparison tab, choose `piping` or `electro`, and upload at least two files for that component.
+2. Click **Download comparison CSV**.
+3. Open **Data Analysis** and click **Run data analysis**.
+4. Use **Price Approvals** and **Settings** to review imputed prices and thresholds.
 
 ---
 
@@ -101,6 +96,9 @@ smart_offer_alignment/
 │   ├── routes/
 │   ├── services/
 │   ├── repositories/
+│   ├── clients/                     # external models (one file per client)
+│   │   ├── embedding.py             # sentence-transformers
+│   │   └── price_imputation.py      # planned
 │   ├── utils/
 │   └── db/
 ├── .env.example
@@ -114,11 +112,14 @@ smart_offer_alignment/
 The backend follows a fixed layer order.
 
 - **Routes** receive HTTP requests and call services or utils.
-- **Services** contain flow logic and call repositories.
+- **Services** contain flow logic and call repositories and clients.
 - **Repositories** are the only database access layer.
-- **Utils** contain pure logic and never touch the database.
+- **Clients** load and call external models. One file per client (`embedding.py`, `price_imputation.py`). No client code outside this folder.
+- **Utils** contain pure logic and never touch the database or external models.
 
 Routes, services, and repositories share the same name per flow (for example `upload_offer`). Functions use **TypedDict** types from `schemas.py` for arguments and return values. Variables and functions use full names without abbreviations.
+
+`clients/embedding.py` holds the sentence-transformers client. `clients/price_imputation.py` is planned next.
 
 ---
 
@@ -303,7 +304,7 @@ Relationships.
 - One `items` row links to many `offer_items` rows when the same template item appears in multiple offers.
 - Template items and embeddings are shared across offers through `items`.
 
-Tables are created on app startup. Alembic migrations are in `alembic/versions/`.
+Tables and relationships are defined in `src/db/models.py`. Schema is created and updated only with Alembic (`alembic/versions/001_initial_schema.py`). Run before first use:
 
 ```bash
 PYTHONPATH=src alembic upgrade head
@@ -334,7 +335,7 @@ Web UI (frontend/index.html)
   │     ├── POST /upload
   │     │     ├── find_component_sheets()
   │     │     ├── extract_offer_items_from_excel_file()
-  │     │     ├── embed_items()
+  │     │     ├── clients/embedding.py
   │     │     └── ServiceUploadOffer -> RepositoryUploadOffer -> DB
   │     ├── GET /offers
   │     └── GET /summary
@@ -372,8 +373,8 @@ Web UI (frontend/index.html)
 
 ## Future Work
 
+- Add `clients/price_imputation.py` for missing unit and total prices.
 - Support for additional components beyond piping and electro.
-- Automatic threshold update from Validation results.
 - Price range checks and currency normalization.
 - Deployment as a hosted service with user accounts.
 

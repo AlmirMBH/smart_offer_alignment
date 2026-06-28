@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import Column, DateTime, Float, ForeignKey, Integer, JSON, String, Text
+from sqlalchemy import Boolean, Column, DateTime, Float, ForeignKey, Integer, JSON, String, Text
 from sqlalchemy.orm import DeclarativeBase, relationship
 
 
@@ -41,6 +41,15 @@ class OfferItem(Base):
     quantity = Column(Float, nullable=False)
     unit_price = Column(Float, nullable=True)
     total_price = Column(Float, nullable=True)
+    approved = Column(Boolean, nullable=False, default=False)
+    auto_approved = Column(Boolean, nullable=False, default=False)
 
     offer = relationship("Offer", back_populates="offer_items")
     item = relationship("Item", back_populates="offer_items")
+
+
+class AppSetting(Base):
+    __tablename__ = "app_settings"
+
+    key = Column(String, primary_key=True)
+    value = Column(String, nullable=False)

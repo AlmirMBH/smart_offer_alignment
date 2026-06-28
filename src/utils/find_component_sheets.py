@@ -6,9 +6,9 @@ from constants import (
     COMPONENT_SHEET_PATTERNS,
     SKIP_SHEET_KEYWORDS,
 )
-from config import SHEET_SIMILARITY_THRESHOLD
+from config import SHEET_SIMILARITY_THRESHOLD as DEFAULT_SHEET_SIMILARITY_THRESHOLD
 from schemas import DetectionResult, SheetDetail, SheetScore
-from utils.embed_items import cosine_similarity, embed_texts
+from clients.embedding import cosine_similarity, embed_texts
 from utils.load_excel import list_workbook_sheet_names, read_sheet_items
 from utils.parse_items import sheet_uses_component_row_filter
 
@@ -64,6 +64,7 @@ def select_component_sheets(
     sheet_names: list[str],
     sheet_scores: list[SheetScore],
     component: str,
+    sheet_similarity_threshold: float,
 ) -> list[str]:
     name_matches = [
         sheet_name
@@ -82,7 +83,7 @@ def select_component_sheets(
     return [
         row["sheet_name"]
         for row in sheet_scores
-        if row["embedding_score"] >= SHEET_SIMILARITY_THRESHOLD and not is_skip_sheet_name(row["sheet_name"])
+        if row["embedding_score"] >= sheet_similarity_threshold and not is_skip_sheet_name(row["sheet_name"])
     ]
 
 
@@ -97,10 +98,19 @@ def count_sheet_items(file_path: Path | str, sheet_name: str, component: str) ->
     return len(sheet_items)
 
 
-def find_component_sheets(file_path: Path | str, component: str) -> DetectionResult:
+def find_component_sheets(
+    file_path: Path | str,
+    component: str,
+    sheet_similarity_threshold: float = DEFAULT_SHEET_SIMILARITY_THRESHOLD,
+) -> DetectionResult:
     sheet_names = list_workbook_sheet_names(file_path)
     sheet_scores = score_sheet_names(sheet_names, component)
-    selected_sheets = select_component_sheets(sheet_names, sheet_scores, component)
+    selected_sheets = select_component_sheets(
+        sheet_names,
+        sheet_scores,
+        component,
+        sheet_similarity_threshold,
+    )
 
     if not selected_sheets:
         return {

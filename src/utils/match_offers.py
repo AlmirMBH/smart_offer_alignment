@@ -1,6 +1,6 @@
 from config import SIMILARITY_THRESHOLD
 from schemas import ItemDict, OfferDict, OfferFieldsDict, TemplateRow, VectorArray
-from utils.embed_items import cosine_similarity
+from clients.embedding import cosine_similarity
 
 
 def build_offer_fields_from_item(item: ItemDict) -> OfferFieldsDict:
@@ -23,6 +23,8 @@ def find_best_template_match_for_item_vector(
     best_similarity = -1.0
     for index, template_vector in enumerate(template_embeddings):
         if template_rows[index]["component"] != component:
+            continue
+        if item_vector.shape != template_vector.shape:
             continue
         similarity = cosine_similarity(item_vector, template_vector)
         if similarity > best_similarity:
@@ -49,7 +51,9 @@ def match_offers_by_embedding_similarity(
                 item["component"],
             )
             if match_index >= 0 and best_similarity >= similarity_threshold:
-                template_rows[match_index]["offers"][offer_name] = build_offer_fields_from_item(item)
+                template_row = template_rows[match_index]
+                template_row["offers"][offer_name] = build_offer_fields_from_item(item)
+                template_row["embed_text"] = template_row["embed_text"] + " || " + item["embed_text"]
             else:
                 template_rows.append({
                     "embed_text": item["embed_text"],
