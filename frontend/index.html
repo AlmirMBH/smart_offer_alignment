@@ -429,10 +429,6 @@
       column-gap: 4rem;
       align-items: start;
     }
-    .settings-models-column {
-      display: grid;
-      row-gap: 1.75rem;
-    }
     .settings-section { margin-bottom: 1.5rem; }
     .settings-section h2 { margin: 0 0 0.75rem; font-size: 1rem; color: #7eb8ff; }
     .settings-toolbar {
@@ -637,7 +633,7 @@
           </div>
           <div class="comparison-hero-right">
             <p class="comparison-intro">
-              Select a category and upload your Excel troškovnici. The app detects relevant sheets,
+              Select a category and upload your Excel bill of quantities. The app detects relevant sheets,
               saves each line, and suggests prices where Excel has none. Nothing is merged at upload.
               Use Export above to merge similar lines from all uploaded files into one CSV.
               Adjust how strict matching is under Settings. Only approved prices are written to the export.
@@ -730,7 +726,6 @@
       <section class="settings-section">
         <h2>Models</h2>
         <div class="settings-models-layout">
-        <div class="settings-models-column">
         <div class="settings-field">
           <label for="settings-embedding-model">Embedding model</label>
           <p class="settings-hint">Embedding model for sheet names and item descriptions.</p>
@@ -738,20 +733,19 @@
         </div>
         <div class="settings-field">
           <label for="settings-price-imputation-model">Price imputation model</label>
-          <p class="settings-hint">Model for item price search on the internet.</p>
+          <p class="settings-hint">Model for matching items to internet catalog prices.</p>
           <select id="settings-price-imputation-model" required></select>
-        </div>
-        </div>
-        <div class="settings-field">
-          <label for="settings-preferred-websites">Preferred websites</label>
-          <p class="settings-hint">Comma-separated URLs searched first for suggesting missing item prices.</p>
-          <input type="text" id="settings-preferred-websites" required>
         </div>
         </div>
       </section>
       <section class="settings-section">
         <h2>Ingestion</h2>
         <div class="settings-fields-grid">
+        <div class="settings-field">
+          <label for="settings-preferred-websites">Preferred websites</label>
+          <p class="settings-hint">Comma-separated URLs searched first for suggesting missing item prices.</p>
+          <input type="text" id="settings-preferred-websites" required>
+        </div>
         <div class="settings-field">
           <label for="settings-sheet-similarity-threshold">Sheet similarity threshold</label>
           <p class="settings-hint">Fallback for sheet detection. If name rules fail, keep sheets whose name matches the user's dropdown selection in the File Upload tab at least this well. Scale 0-1.</p>
@@ -781,6 +775,11 @@
           <label for="settings-similarity-threshold">Item similarity for export</label>
           <p class="settings-hint">Minimum item similarity to merge items from different offers into one comparison line (0-1).</p>
           <input type="number" id="settings-similarity-threshold" min="0" max="1" step="0.01" required>
+        </div>
+        <div class="settings-field">
+          <label for="settings-merge-export-when-unit-matches">Merge export items only when unit matches</label>
+          <p class="settings-hint">When on, export merge also requires the same quantity unit (e.g. m, kom). When off, similarity alone decides merge.</p>
+          <input type="checkbox" id="settings-merge-export-when-unit-matches">
         </div>
         <div class="settings-field">
           <label for="settings-price-approvals-page-size">Price Approvals rows per page</label>
@@ -834,6 +833,7 @@
       document.getElementById("settings-pricing-similarity-threshold").value = data.pricing_similarity_threshold;
       document.getElementById("settings-sheet-similarity-threshold").value = data.sheet_similarity_threshold;
       document.getElementById("settings-auto-approve-prices").checked = data.auto_approve_prices;
+      document.getElementById("settings-merge-export-when-unit-matches").checked = data.merge_export_when_unit_matches;
       document.getElementById("settings-price-approvals-page-size").value = data.price_approvals_page_size;
       priceApprovalsPageSize = data.price_approvals_page_size;
     }
@@ -1245,6 +1245,7 @@
         pricing_similarity_threshold: parseInt(document.getElementById("settings-pricing-similarity-threshold").value, 10),
         sheet_similarity_threshold: parseFloat(document.getElementById("settings-sheet-similarity-threshold").value),
         auto_approve_prices: document.getElementById("settings-auto-approve-prices").checked,
+        merge_export_when_unit_matches: document.getElementById("settings-merge-export-when-unit-matches").checked,
         price_approvals_page_size: parseInt(
           document.getElementById("settings-price-approvals-page-size").value,
           10
